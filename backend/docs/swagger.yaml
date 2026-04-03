@@ -1,0 +1,264 @@
+basePath: /api/v1
+definitions:
+  backend_domain_models.Transaction:
+    properties:
+      amount:
+        type: number
+      category:
+        type: string
+      created_at:
+        type: string
+      date:
+        type: string
+      id:
+        type: integer
+      notes:
+        type: string
+      type:
+        $ref: '#/definitions/backend_domain_models.TransactionType'
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  backend_domain_models.TransactionType:
+    enum:
+    - Income
+    - Expense
+    type: string
+    x-enum-varnames:
+    - TypeIncome
+    - TypeExpense
+  backend_pkg_apperrors.AppError:
+    properties:
+      details: {}
+      message:
+        type: string
+      status:
+        type: integer
+    type: object
+  handler_api.CreateTransactionInput:
+    properties:
+      amount:
+        example: 150
+        type: number
+      category:
+        example: Groceries
+        type: string
+      date:
+        description: 'Format: YYYY-MM-DD'
+        example: "2026-05-01"
+        type: string
+      notes:
+        example: Weekly groceries shopping
+        type: string
+      type:
+        enum:
+        - Income
+        - Expense
+        example: Expense
+        type: string
+    required:
+    - amount
+    - category
+    - date
+    - type
+    type: object
+  handler_api.UpdateTransactionInput:
+    properties:
+      amount:
+        example: 170
+        type: number
+      category:
+        example: Groceries
+        type: string
+      date:
+        example: "2026-05-02"
+        type: string
+      notes:
+        example: Updated weekly groceries amount
+        type: string
+      type:
+        enum:
+        - Income
+        - Expense
+        example: Expense
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: REST API documentation for the Clean Architecture Golang Finance Dashboard
+    backend.
+  termsOfService: http://swagger.io/terms/
+  title: Finance Dashboard API
+  version: "1.0"
+paths:
+  /transactions:
+    get:
+      description: Returns transaction paginated list optionally filtered by category,
+        type, and date
+      parameters:
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 10
+        description: Limits per page
+        in: query
+        name: page_size
+        type: integer
+      - description: Filter by category
+        in: query
+        name: category
+        type: string
+      - description: Filter by type (Income/Expense)
+        in: query
+        name: type
+        type: string
+      - description: Filter by exact date (YYYY-MM-DD)
+        in: query
+        name: date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/backend_pkg_apperrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/backend_pkg_apperrors.AppError'
+      summary: Fetch a list of transactions
+      tags:
+      - transactions
+    post:
+      consumes:
+      - application/json
+      description: Creates a new financial transaction under the active user
+      parameters:
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Transaction payload
+        in: body
+        name: transaction
+        required: true
+        schema:
+          $ref: '#/definitions/handler_api.CreateTransactionInput'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/backend_domain_models.Transaction'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/backend_pkg_apperrors.AppError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/backend_pkg_apperrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/backend_pkg_apperrors.AppError'
+      summary: Create a new transaction
+      tags:
+      - transactions
+  /transactions/{id}:
+    delete:
+      description: Performs hard deletion of transaction record
+      parameters:
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Transaction ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/backend_pkg_apperrors.AppError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/backend_pkg_apperrors.AppError'
+      summary: Delete transaction
+      tags:
+      - transactions
+    put:
+      consumes:
+      - application/json
+      description: Modifies an existing transaction
+      parameters:
+      - description: Bearer Token
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      - description: Transaction ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated values
+        in: body
+        name: transaction
+        required: true
+        schema:
+          $ref: '#/definitions/handler_api.UpdateTransactionInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/backend_domain_models.Transaction'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/backend_pkg_apperrors.AppError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/backend_pkg_apperrors.AppError'
+      summary: Update transaction
+      tags:
+      - transactions
+schemes:
+- http
+swagger: "2.0"

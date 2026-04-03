@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"backend/config"
+	_ "backend/docs"
 	"backend/domain/models"
 	"backend/handler/api"
 	"backend/handler/middleware"
@@ -14,7 +15,22 @@ import (
 	"backend/service"
 
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
+
+// @title Finance Dashboard API
+// @version 1.0
+// @description REST API documentation for the Clean Architecture Golang Finance Dashboard backend.
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
+
+// @host localhost:8080
+// @BasePath /api/v1
+// @schemes http
 
 func main() {
 	// Initialize Logger
@@ -65,6 +81,10 @@ func main() {
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
+
+	// Swagger documentation route
+	// To actually serve this, we must run `swag init -g cmd/api/main.go` and import `backend/docs`
+	r.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	apiRoutes := r.Group("/api/v1")
 	{

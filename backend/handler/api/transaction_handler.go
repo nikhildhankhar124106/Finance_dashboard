@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	_ "backend/domain/models"
 	"backend/pkg/apperrors"
 	"backend/service"
 
@@ -20,17 +21,42 @@ func NewTransactionHandler(txService service.TransactionService) *TransactionHan
 	}
 }
 
+// CreateTransactionInput represents the expected payload for creating a transaction
+type CreateTransactionInput struct {
+	Amount   float64 `json:"amount" binding:"required,gt=0" example:"150.00"`
+	Type     string  `json:"type" binding:"required,oneof=Income Expense" example:"Expense"`
+	Category string  `json:"category" binding:"required" example:"Groceries"`
+	Date     string  `json:"date" binding:"required" example:"2026-05-01"` // Format: YYYY-MM-DD
+	Notes    string  `json:"notes" example:"Weekly groceries shopping"`
+}
+
+// UpdateTransactionInput represents the expected payload for updating a transaction completely or partially
+type UpdateTransactionInput struct {
+	Amount   float64 `json:"amount" binding:"omitempty,gt=0" example:"170.00"`
+	Type     string  `json:"type" binding:"omitempty,oneof=Income Expense" example:"Expense"`
+	Category string  `json:"category" example:"Groceries"`
+	Date     string  `json:"date" example:"2026-05-02"`
+	Notes    string  `json:"notes" example:"Updated weekly groceries amount"`
+}
+
+// CreateTransaction godoc
+// @Summary Create a new transaction
+// @Description Creates a new financial transaction under the active user
+// @Tags transactions
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer Token"
+// @Param transaction body CreateTransactionInput true "Transaction payload"
+// @Success 201 {object} models.Transaction
+// @Failure 400 {object} apperrors.AppError
+// @Failure 401 {object} apperrors.AppError
+// @Failure 500 {object} apperrors.AppError
+// @Router /transactions [post]
 func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
-	var input struct {
-		Amount   float64 `json:"amount" binding:"required,gt=0"`
-		Type     string  `json:"type" binding:"required,oneof=Income Expense"`
-		Category string  `json:"category" binding:"required"`
-		Date     string  `json:"date" binding:"required"` // Format: YYYY-MM-DD
-		Notes    string  `json:"notes"`
-	}
+	var input CreateTransactionInput
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.Error(err) // Hands off validation errors to Centralized error handler
+		c.Error(err) 
 		return
 	}
 
@@ -50,6 +76,21 @@ func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 	c.JSON(http.StatusCreated, tx)
 }
 
+// GetTransactions godoc
+// @Summary Fetch a list of transactions
+// @Description Returns transaction paginated list optionally filtered by category, type, and date
+// @Tags transactions
+// @Produce json
+// @Param Authorization header string true "Bearer Token"
+// @Param page query int false "Page number" default(1)
+// @Param page_size query int false "Limits per page" default(10)
+// @Param category query string false "Filter by category"
+// @Param type query string false "Filter by type (Income/Expense)"
+// @Param date query string false "Filter by exact date (YYYY-MM-DD)"
+// @Success 200 {object} map[string]interface{}
+// @Failure 401 {object} apperrors.AppError
+// @Failure 500 {object} apperrors.AppError
+// @Router /transactions [get]
 func (h *TransactionHandler) GetTransactions(c *gin.Context) {
 	category := c.Query("category")
 	txType := c.Query("type")
@@ -59,7 +100,6 @@ func (h *TransactionHandler) GetTransactions(c *gin.Context) {
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
 
 	var userID *uint
-	// Filter if Viewer
 	roleVal, exists := c.Get("role")
 	if !exists {
 		c.Error(apperrors.NewUnauthorizedError("Role not set"))
@@ -90,6 +130,19 @@ func (h *TransactionHandler) GetTransactions(c *gin.Context) {
 	})
 }
 
+// UpdateTransaction godoc
+// @Summary Update transaction
+// @Description Modifies an existing transaction
+// @Tags transactions
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer Token"
+// @Param id path int true "Transaction ID"
+// @Param transaction body UpdateTransactionInput true "Updated values"
+// @Success 200 {object} models.Transaction
+// @Failure 400 {object} apperrors.AppError
+// @Failure 404 {object} apperrors.AppError
+// @Router /transactions/{id} [put]
 func (h *TransactionHandler) UpdateTransaction(c *gin.Context) {
 	idParam := c.Param("id")
 	id, err := strconv.ParseUint(idParam, 10, 32)
@@ -98,13 +151,7 @@ func (h *TransactionHandler) UpdateTransaction(c *gin.Context) {
 		return
 	}
 
-	var input struct {
-		Amount   float64 `json:"amount" binding:"omitempty,gt=0"`
-		Type     string  `json:"type" binding:"omitempty,oneof=Income Expense"`
-		Category string  `json:"category"`
-		Date     string  `json:"date"`
-		Notes    string  `json:"notes"`
-	}
+	var input UpdateTransactionInput
 
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.Error(err)
@@ -120,6 +167,17 @@ func (h *TransactionHandler) UpdateTransaction(c *gin.Context) {
 	c.JSON(http.StatusOK, tx)
 }
 
+// DeleteTransaction godoc
+// @Summary Delete transaction
+// @Description Performs hard deletion of transaction record
+// @Tags transactions
+// @Produce json
+// @Param Authorization header string true "Bearer Token"
+// @Param id path int true "Transaction ID"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} apperrors.AppError
+// @Failure 500 {object} apperrors.AppError
+// @Router /transactions/{id} [delete]
 func (h *TransactionHandler) DeleteTransaction(c *gin.Context) {
 	idParam := c.Param("id")
 	id, err := strconv.ParseUint(idParam, 10, 32)
