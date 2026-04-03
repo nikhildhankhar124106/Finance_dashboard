@@ -57,6 +57,9 @@ func main() {
 	}
 
 	r := gin.Default()
+	
+	// Apply Central Error Middleware Globally
+	r.Use(middleware.ErrorHandler())
 
 	// Health check route
 	r.GET("/health", func(c *gin.Context) {

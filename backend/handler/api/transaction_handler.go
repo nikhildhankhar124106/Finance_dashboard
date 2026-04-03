@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"backend/pkg/apperrors"
 	"backend/service"
 
 	"github.com/gin-gonic/gin"
@@ -29,21 +30,20 @@ func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.Error(err) // Hands off validation errors to Centralized error handler
 		return
 	}
 
-	// Assuming the admin/user ID creating this is extracted from token
 	userIDVal, exists := c.Get("user_id")
 	if !exists {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized context"})
+		c.Error(apperrors.NewUnauthorizedError("Unauthorized context"))
 		return
 	}
 	userID := userIDVal.(uint)
 
 	tx, err := h.txService.CreateTransaction(userID, input.Amount, input.Type, input.Category, input.Date, input.Notes)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.Error(apperrors.NewInternalError(err.Error()))
 		return
 	}
 
@@ -59,17 +59,26 @@ func (h *TransactionHandler) GetTransactions(c *gin.Context) {
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
 
 	var userID *uint
-	// In a real application, you might filter automatically if they are a viewer, vs an admin seeing everything.
-	// For this example, viewers only see their own transactions, admins see all unless asked.
-	roleVal, _ := c.Get("role")
+	// Filter if Viewer
+	roleVal, exists := c.Get("role")
+	if !exists {
+		c.Error(apperrors.NewUnauthorizedError("Role not set"))
+		return
+	}
+	
 	if roleVal.(string) != "Admin" {
-		uid := c.MustGet("user_id").(uint)
-		userID = &uid
+		uid, uidExists := c.Get("user_id")
+		if !uidExists {
+			c.Error(apperrors.NewUnauthorizedError("UserID not set"))
+			return
+		}
+		uidCast := uid.(uint)
+		userID = &uidCast
 	}
 
 	transactions, total, err := h.txService.GetTransactions(userID, category, txType, dateStr, page, pageSize)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch transactions"})
+		c.Error(apperrors.NewInternalError("Failed to fetch transactions"))
 		return
 	}
 
@@ -85,7 +94,7 @@ func (h *TransactionHandler) UpdateTransaction(c *gin.Context) {
 	idParam := c.Param("id")
 	id, err := strconv.ParseUint(idParam, 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid transaction ID"})
+		c.Error(apperrors.NewValidationError("Invalid transaction ID parameter"))
 		return
 	}
 
@@ -98,13 +107,13 @@ func (h *TransactionHandler) UpdateTransaction(c *gin.Context) {
 	}
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.Error(err)
 		return
 	}
 
 	tx, err := h.txService.UpdateTransaction(uint(id), input.Amount, input.Type, input.Category, input.Date, input.Notes)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.Error(apperrors.NewNotFoundError(err.Error()))
 		return
 	}
 
@@ -115,13 +124,13 @@ func (h *TransactionHandler) DeleteTransaction(c *gin.Context) {
 	idParam := c.Param("id")
 	id, err := strconv.ParseUint(idParam, 10, 32)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid transaction ID"})
+		c.Error(apperrors.NewValidationError("Invalid transaction ID parameter"))
 		return
 	}
 
 	err = h.txService.DeleteTransaction(uint(id))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete transaction"})
+		c.Error(apperrors.NewInternalError("Failed to delete transaction"))
 		return
 	}
 
