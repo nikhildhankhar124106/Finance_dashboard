@@ -14,6 +14,8 @@ type Config struct {
 	DBPassword string
 	DBName     string
 	DBPort     string
+	RedisHost  string
+	RedisPort  string
 	AppEnv     string
 }
 
@@ -30,6 +32,8 @@ func LoadConfig() *Config {
 		DBPassword: getEnv("DB_PASSWORD", "secret"),
 		DBName:     getEnv("DB_NAME", "financedb"),
 		DBPort:     getEnv("DB_PORT", "5432"),
+		RedisHost:  getEnv("REDIS_HOST", "localhost"),
+		RedisPort:  getEnv("REDIS_PORT", "6379"),
 		AppEnv:     getEnv("APP_ENV", "development"),
 	}
 }

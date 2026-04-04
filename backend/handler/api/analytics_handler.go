@@ -33,6 +33,15 @@ func resolveFilter(c *gin.Context) *uint {
 	return userID
 }
 
+// GetSummary godoc
+// @Summary Fetch dashboard summary
+// @Description Returns financial summary metrics (total income, total expense, balance) for the dashboard
+// @Tags analytics
+// @Produce json
+// @Param Authorization header string true "Bearer Token"
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]string
+// @Router /summary [get]
 func (h *AnalyticsHandler) GetSummary(c *gin.Context) {
 	userID := resolveFilter(c)
 
@@ -45,6 +54,15 @@ func (h *AnalyticsHandler) GetSummary(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 }
 
+// GetCategoryBreakdown godoc
+// @Summary Fetch category breakdown
+// @Description Returns expenses aggregated by category
+// @Tags analytics
+// @Produce json
+// @Param Authorization header string true "Bearer Token"
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]string
+// @Router /category-breakdown [get]
 func (h *AnalyticsHandler) GetCategoryBreakdown(c *gin.Context) {
 	userID := resolveFilter(c)
 
@@ -57,6 +75,15 @@ func (h *AnalyticsHandler) GetCategoryBreakdown(c *gin.Context) {
 	c.JSON(http.StatusOK, res)
 }
 
+// GetMonthlyTrends godoc
+// @Summary Fetch monthly trends
+// @Description Returns income and expenses aggregated by month
+// @Tags analytics
+// @Produce json
+// @Param Authorization header string true "Bearer Token"
+// @Success 200 {object} map[string]interface{}
+// @Failure 500 {object} map[string]string
+// @Router /monthly-trends [get]
 func (h *AnalyticsHandler) GetMonthlyTrends(c *gin.Context) {
 	userID := resolveFilter(c)
 

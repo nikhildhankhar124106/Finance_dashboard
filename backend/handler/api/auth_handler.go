@@ -15,10 +15,24 @@ func NewAuthHandler() *AuthHandler {
 	return &AuthHandler{}
 }
 
+type LoginRequest struct {
+	Email string `json:"email" binding:"required" example:"admin@finance.com"`
+}
+
+// MockLogin godoc
+// @Summary Mock login for authentication
+// @Description Logs in a user mockly (admin@finance.com, analyst@finance.com, viewer@finance.com) and returns a JWT token
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param credentials body LoginRequest true "Login credentials"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /auth/login [post]
 func (h *AuthHandler) MockLogin(c *gin.Context) {
-	var req struct {
-		Email string `json:"email" binding:"required"`
-	}
+	var req LoginRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Email is required"})

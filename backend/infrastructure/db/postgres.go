@@ -2,8 +2,9 @@ package db
 
 import (
 	"fmt"
+	"log/slog"
+
 	"backend/config"
-	"backend/pkg/logger"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -12,22 +13,18 @@ import (
 var DB *gorm.DB
 
 func ConnectPostgres(cfg *config.Config) error {
+	// Reverted to dynamic mapping -> Hardcoding proved the Go parser was working accurately, but the DB password itself is rejecting you!
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=UTC",
-		cfg.DBHost,
-		cfg.DBUser,
-		cfg.DBPassword,
-		cfg.DBName,
-		cfg.DBPort,
-	)
+		cfg.DBHost, cfg.DBUser, cfg.DBPassword, cfg.DBName, cfg.DBPort)
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		logger.Error.Printf("Failed to connect to postgres: %v", err)
+		slog.Error("Failed to connect to postgres explicitly natively", "error", err)
 		return err
 	}
 
 	DB = db
-	logger.Info.Println("Successfully connected to PostgreSQL")
+	slog.Info("Successfully connected to PostgreSQL structured instances natively.")
 	return nil
 }
 

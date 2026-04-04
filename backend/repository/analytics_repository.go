@@ -44,10 +44,11 @@ func (r *analyticsRepository) GetSummary(userID *uint) (*SummaryResult, error) {
 			COALESCE(SUM(CASE WHEN type = 'Expense' THEN amount ELSE 0 END), 0) AS total_expense,
 			COALESCE(SUM(CASE WHEN type = 'Income' THEN amount ELSE -amount END), 0) AS net_balance
 		FROM transactions
+		WHERE deleted_at IS NULL
 	`
 	
 	if userID != nil {
-		query += ` WHERE user_id = ?`
+		query += ` AND user_id = ?`
 		err := r.db.Raw(query, *userID).Scan(&res).Error
 		return &res, err
 	}
@@ -61,10 +62,11 @@ func (r *analyticsRepository) GetCategoryBreakdown(userID *uint) ([]CategoryBrea
 	query := `
 		SELECT category, type, COALESCE(SUM(amount), 0) as total
 		FROM transactions
+		WHERE deleted_at IS NULL
 	`
 	
 	if userID != nil {
-		query += ` WHERE user_id = ? `
+		query += ` AND user_id = ? `
 	}
 	
 	query += ` GROUP BY category, type ORDER BY total DESC`
@@ -87,10 +89,11 @@ func (r *analyticsRepository) GetMonthlyTrends(userID *uint) ([]MonthlyTrend, er
 			COALESCE(SUM(CASE WHEN type = 'Income' THEN amount ELSE 0 END), 0) AS income,
 			COALESCE(SUM(CASE WHEN type = 'Expense' THEN amount ELSE 0 END), 0) AS expense
 		FROM transactions
+		WHERE deleted_at IS NULL
 	`
 
 	if userID != nil {
-		query += ` WHERE user_id = ? `
+		query += ` AND user_id = ? `
 	}
 	
 	query += ` GROUP BY DATE_TRUNC('month', date) ORDER BY month ASC`

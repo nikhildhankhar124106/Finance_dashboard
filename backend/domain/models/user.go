@@ -18,7 +18,7 @@ type User struct {
 	ID           uint           `gorm:"primaryKey" json:"id"`
 	Email        string         `gorm:"uniqueIndex;not null" json:"email"`
 	Name         string         `gorm:"not null" json:"name"`
-	Role         UserRole       `gorm:"type:user_role;default:'Viewer';not null" json:"role"`
+	Role         UserRole       `gorm:"type:varchar(20);default:'Viewer';not null" json:"role"`
 	Transactions []Transaction  `gorm:"foreignKey:UserID" json:"transactions,omitempty"`
 	CreatedAt    time.Time      `json:"created_at"`
 	UpdatedAt    time.Time      `json:"updated_at"`

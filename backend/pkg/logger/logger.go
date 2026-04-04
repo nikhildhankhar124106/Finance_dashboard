@@ -1,19 +1,22 @@
 package logger
 
 import (
-	"log"
+	"log/slog"
 	"os"
 )
 
-// Logger is a basic wrapper for the standard library logger.
-// In a production-ready application, you might want to replace this with
-// a structured logger like zap or logrus.
 var (
-	Info  *log.Logger
-	Error *log.Logger
+	Log *slog.Logger
 )
 
 func Init() {
-	Info = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
-	Error = log.New(os.Stderr, "ERROR: ", log.Ldate|log.Ltime|log.Lshortfile)
+	opts := &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}
+
+	// Switched to TextHandler to prevent PowerShell terminal mangling from explicit \n string breaks inside raw JSON error traces
+	handler := slog.NewTextHandler(os.Stdout, opts)
+
+	Log = slog.New(handler)
+	slog.SetDefault(Log) // Globally sets standard logger allowing implicit mappings
 }
