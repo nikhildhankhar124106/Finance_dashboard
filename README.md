@@ -6,62 +6,58 @@
 ---
 
 ## 📖 Project Overview
-This represents the rigorous backend service validating and delivering complex financial data processing. It ensures resilient Role-Based Access Control (RBAC), enforces strict JSON schema bindings for transactions, implements JSON Web Token (JWT) tracking, and computes rapid aggregations bridging native PostgreSQL indices.
+This is a production-grade backend service built with **Clean Architecture**. It features deep internal auditing, strict role-based access control (RBAC), and professional financial data processing.
 
-It was designed exclusively applying **Clean Architecture** models securely restricting components across dedicated `Repository`, `Service`, `Domain`, and `Handler` interfaces bridging separation of concerns impeccably.
+### Key Enhancements:
+- **Audit Trail**: Every data mutation is recorded for security and compliance.
+- **User Status Management**: Real-time account activation/deactivation.
+- **Advanced Data Processing**: Search, multi-field sorting, and CSV export.
+- **Resilient Infrastructure**: Integrated rate limiting and centralized error handling.
 
 ---
 
 ## 🛠️ Tech Stack
-- **Language**: Go 1.20+
-- **Framework**: [Gin-Gonic v1.10+](https://github.com/gin-gonic/gin)
-- **Database**: PostgreSQL
-- **ORM abstraction**: [GORM](https://gorm.io/)
-- **Security & RBAC**: JWT Authentication (`golang-jwt`)
-- **Documentation**: Swagger OpenAPI (`swaggo/swag`)
-- **Validation**: Go Playground bindings mapping
+- **Language**: Go 1.21+
+- **Framework**: [Gin-Gonic](https://github.com/gin-gonic/gin)
+- **Database**: PostgreSQL (GORM)
+- **Security**: JWT Authentication + custom RBAC Middleware
+- **Documentation**: Swagger OpenAPI
+- **Testing**: Native Go `testing` + `testify`
 
 ---
 
-## 🌐 Live Deployment
-**Production Endpoint**: [*(Insert API URL here once deployed)*]()
-**Swagger Documentation**: [*(Insert Swagger URL here)*]()
+## 🔐 Roles & Access Control
+Access is determined by the `role` payload in the JWT.
 
----
+| Role | Permissions |
+| :--- | :--- |
+| **Admin** | Full system control. User management, total transaction visibility, data export. |
+| **Analyst** | Read-only access to global financial metrics, summaries, and trends. |
+| **Viewer** | Personal finance tracking. Restricted to their own `user_id` context. |
 
-## 🔐 Roles & Access Logic
-Access inside this ecosystem determines explicit HTTP visibility dynamically based on the verified JWT signature payload generated.
-
-- **Admin**: Has absolute unconditional control across all environments. Can delete systems files, manage and create transactions, and pull global metrics.
-- **Analyst**: Focused heavily on read-only endpoints parsing system trends. Can pull categorized aggregated reports and monthly financial datasets but cannot execute `POST/PUT/DELETE` methods over endpoints natively.
-- **Viewer**: Baseline standard user logic natively restricted exclusively utilizing isolated queries mapping tightly against their specific `user_id` context preventing data spillages.
-
-### 🧪 Sample Credentials (Mock Seeded Accounts)
-You can test the JWT endpoints using the following natively seeded schemas to fetch authenticated tokens:
+### 🧪 Test Credentials
 | Role | Email |
 | :--- | :--- |
-| **Admin** | `admin@finance.com` |
-| **Analyst** | `analyst@finance.com` |
-| **Viewer** | `viewer@finance.com` |
+| **Admin** | `admin@test.com` |
+| **Analyst** | `analyst@test.com` |
+| **Viewer** | `viewer@test.com` |
 
 ---
 
 ## 🚀 Setup Instructions
 
 #### 1. Pre-Requisites
-- Ensure you have **Go** executing correctly.
-- Establish an active target **PostgreSQL** service running.
+- **Go** installed.
+- **PostgreSQL** running.
 
-#### 2. Local Initialization 
-Clone the repository and jump into the backend directory executing your package downloads:
+#### 2. Local Setup
 ```bash
 git clone https://github.com/nikhildhankhar124106/Finance_dashboard.git
 cd "Finance dashboard/backend"
 go mod tidy
 ```
 
-#### 3. Establish System Variables
-Create a standard `.env` configuration file inside `/backend` mimicking native PostgreSQL credentials appropriately. (A fallback maps correctly against localhost naturally if missing).
+#### 3. Environment Config (`.env`)
 ```env
 PORT=8080
 DB_HOST=localhost
@@ -72,33 +68,38 @@ DB_PORT=5432
 APP_ENV=development
 ```
 
-#### 4. Run Seed Executable Configuration (Optional)
-To instantly pre-fill your database tables with structured roles mapping to the `Sample Credentials` alongside historical datasets spanning analytics charts robustly:
+#### 4. Run Application
 ```bash
+# Optional: Seed the database with sample data
 go run ./cmd/seed
-```
 
-#### 5. Blast-off!
-Bind your endpoints launching standard API routes alongside `/docs`:
-```bash
+# Start the API server
 go run ./cmd/api
 ```
 
 ---
 
-## 📚 API Endpoints
-*Once actively running, fully detailed documentation alongside GUI test modules natively exist inside `http://localhost:8080/docs/index.html`*
+## 📚 API Features & Documentation
 
-### Authentication
-- `POST /api/v1/auth/login`: Issue mock access token resolving emails into scopes.
+### Documentation
+- **Swagger GUI**: `http://localhost:8080/docs/index.html`
 
-### Transaction Management
-- `GET /api/v1/transactions`: Track records (Admin sees all; Viewer natively limited by implicit `userID` limits). Features native queries mapping: `?page=1&limit=5&category=Rent&date=2024-05-01`
-- `POST /api/v1/transactions`: (Requires Admin target). Push a validated transaction. 
-- `PUT /api/v1/transactions/:id`: Modify properties.
-- `DELETE /api/v1/transactions/:id`: Destroys record accurately. 
+### Advanced Transactions (`GET /api/v1/transactions`)
+Supports complex queries:
+- `search`: Searches category and notes.
+- `sort`: `amount`, `date`, or `category`.
+- `order`: `asc` or `desc`.
+- `page` & `page_size`: Paginated results with `total_pages`.
 
-### Financial Analytics (Analyst & Admin Limited)
-- `GET /api/v1/summary`: Retrieve net limits, aggregate expenses, and overall incomes.
-- `GET /api/v1/category-breakdown`: Parse granular arrays mapped specifically separating incomes from expenses sorted cleanly.
-- `GET /api/v1/monthly-trends`: Outputs formatted date truncations grouping timelines cleanly formatting `YYYY-MM` charting data perfectly for visual metric grids.
+### Audit & Security
+- **Export CSV**: `GET /api/v1/transactions/export` (Download CSV history).
+- **User Status**: `PATCH /api/v1/users/:id/status` (Deactivated users are blocked from all endpoints instantly).
+- **Rate Limit**: Strictly enforced at **100 requests per minute** per IP.
+
+---
+
+## 🧪 Testing
+Run the integration test suite to verify auth and status logic:
+```bash
+go test ./tests/...
+```
