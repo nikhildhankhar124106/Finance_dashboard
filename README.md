@@ -1,86 +1,139 @@
-# Finance Dashboard Service
+# Finance Dashboard API
 
-A production-ready financial management system built with Go (Golang). This service provides a robust architectural foundation for real-time transaction tracking, multi-dimensional analytics, and automated role-based access control.
+A professional backend service for financial management built with Go (Golang). This application provides a stable foundation for transaction tracking, financial analytics, and role-based access control.
 
 ## Deployment Status
 
-*   **Production Environment**: [https://finance-dashboard-t11s.onrender.com](https://finance-dashboard-t11s.onrender.com)
-*   **API Documentation (Swagger)**: [https://finance-dashboard-t11s.onrender.com/docs/index.html](https://finance-dashboard-t11s.onrender.com/docs/index.html)
+*   **Production API**: [https://finance-dashboard-t11s.onrender.com](https://finance-dashboard-t11s.onrender.com)
+*   **Interactive Documentation (Swagger)**: [https://finance-dashboard-t11s.onrender.com/docs/index.html](https://finance-dashboard-t11s.onrender.com/docs/index.html)
 *   **System Health**: [https://finance-dashboard-t11s.onrender.com/health](https://finance-dashboard-t11s.onrender.com/health)
 
-## Architecture Overview
+## Technical Stack
 
-The system is developed using Domain-Driven Design (DDD) principles, ensuring clear separation of concerns between business logic, persistence, and external communication layers.
+*   **Language**: Go 1.21+ (Gin Framework)
+*   **Database**: PostgreSQL 16 (GORM ORM)
+*   **Caching**: Redis 7.0 (Distributed caching for analytics)
+*   **Authentication**: JWT (HMAC-SHA256)
+*   **Logging**: Structured JSON Logging (slog)
 
-### Technical Stack
-*   **Runtime**: Go 1.21+ (Gin Web Framework)
-*   **Persistence**: PostgreSQL 16 (GORM ORM)
-*   **Cache**: Redis 7.0 (Distributed caching for analytics)
-*   **Security**: JWT (HMAC-SHA256), token-bucket rate limiting
-*   **Observability**: Structured JSON logging (slog)
+## Core Features
 
-### Directory Structure
-```text
-├── cmd/api           # Application entry point
-├── domain/models     # GORM schemas and domain entities
-├── handler/api       # HTTP handlers and request orchestration
-├── handler/middleware # Auth, RBAC, Rate-limiting, Audit Logging
-├── infrastructure    # Database and Redis connection adapters
-├── repository        # Data persistence implementation
-├── service           # Core business logic and orchestration
-└── pkg               # Shared utilities (Auth, Logging)
-```
+### 1. User & Role Management
+*   Secure authentication using JWT.
+*   Pre-seeded accounts for testing (Admin, Analyst, Viewer).
+*   Role-based permissions enforced across all endpoints.
+
+### 2. Financial Records (CRUD)
+*   Create, Read, Update, and Delete transactions.
+*   **Filtering**: Search by category, transaction type, and specific dates.
+*   **Pagination**: Efficiently manage large datasets with offset-based paging.
+*   **Global Search**: Keyword-based searching across categories and notes using PostgreSQL ILIKE.
+
+### 3. Analytics & Trends
+*   **Summary**: Total income, total expenses, and current balance.
+*   **Breakdown**: Spending distribution categorized by transaction type.
+*   **Monthly Trends**: Periodical data showing financial movement over time.
+
+### 4. System Stability
+*   **Soft Deletes**: Records are marked as deleted but preserved for audit integrity.
+*   **Sequence Sync**: Automatic database sequence alignment on startup to prevent ID conflicts.
 
 ## Security & Access Control
 
-Access control is enforced globally via a dedicated JWT middleware that extracts claims and validates roles against a persistent user store.
+### Role-Based Access Control (RBAC)
+Role-based permissions are enforced via custom middleware. The system extracts the user role from the JWT claim and validates it against the allowed roles for each specific route.
 
-### Permission Matrix
-
-| Endpoint | Method | Admin | Analyst | Viewer |
+| Feature | Endpoint | Admin | Analyst | Viewer |
 | :--- | :--- | :---: | :---: | :---: |
-| `/api/v1/users` | POST | Read/Write | x | x |
-| `/api/v1/users` | GET | Read | Read | Read |
-| `/api/v1/transactions` | POST | Read/Write | x | x |
-| `/api/v1/transactions` | GET | Read | Read | Read (Scoped) |
-| `/api/v1/summary` | GET | Read | Read | Read |
-| `/api/v1/system/logs` | DELETE| Read/Write | x | x |
+| Create User | `POST /api/v1/users` | Yes | No | No |
+| List Users | `GET /api/v1/users` | Yes | Yes | Yes |
+| Create Transaction | `POST /api/v1/transactions` | Yes | No | No |
+| List Transactions | `GET /api/v1/transactions` | Yes | Yes | Yes (Scoped) |
+| View Analytics | `GET /api/v1/summary` | Yes | Yes | Yes |
+| Delete Logs | `DELETE /api/v1/system/logs` | Yes | No | No |
 
-## Core Technical Features
+## Validation & Error Handling
 
-### Advanced Persistence
-*   **State-Based Deletion**: Records utilize GORM `DeletedAt` for soft-deletion recovery and audit integrity.
-*   **Global Searching**: Performance-optimized `ILIKE` pattern matching across transaction categories and notes.
-*   **Sequence Synchronization**: Automated primary key sequence alignment on startup to prevent ID conflicts in managed cloud environments.
+*   **Input Validation**: Request payloads are strictly validated using Gin's `binding:"required"` and the Go Playground validator.
+*   **HTTP Status Codes**:
+    *   **200/201**: Successful request/creation.
+    *   **400**: Bad Request (Invalid input).
+    *   **401**: Unauthorized (Missing or invalid token).
+    *   **403**: Forbidden (Insufficient role permissions).
+    *   **500**: Internal Server Error.
+*   **Structured Errors**: All failures return a standardized JSON response: `{"error": "description"}`.
 
-### Transaction Management
-*   **Advanced Filtering**: Supports multi-parameter filtering (category, type, date), dynamic sorting, and offset-based pagination.
-*   **Analytics Aggregation**: Real-time spending analysis across categories and monthly trends with Redis-backed optimized lookups.
+## Project Structure
+
+```text
+├── cmd/api           # Application entry point
+├── domain/models     # Database schemas and entities
+├── handler/api       # HTTP handlers (Request/Response)
+├── handler/middleware # Auth, RBAC, and Rate-limiting
+├── infrastructure    # Database and Redis adapters
+├── repository        # Data persistence (SQL logic)
+├── service           # Business logic and processing
+└── pkg               # Shared utilities (Auth, Logging)
+```
 
 ## Environment Configuration
 
-The application implements a robust configuration layer that prioritizes system environment variables for production security while providing local development defaults.
-
-### Production (Neon/Render)
-The following variables are mandatory for production environments:
-
-| Variable | Requirement | Description |
-| :--- | :--- | :--- |
-| `DB_URL` | Required | Standard connection string for PostgreSQL (supports `sslmode=require`). |
-| `JWT_SECRET` | Required | Secure key for HMAC-SHA256 token signing. |
-| `APP_ENV` | Optional | Set to `production` to enable Release Mode. |
-| `PORT` | Dynamic | Port binding for the Render service listener. |
+### Production (Render & Neon)
+*   **DB_URL**: The Neon PostgreSQL connection string (supports `sslmode=require`).
+*   **JWT_SECRET**: The secure signing key for tokens.
+*   **APP_ENV**: Set to `production` for release mode.
 
 ### Local Development
-Defaults are provided for local `localhost` development:
+Defaults are provided for local development:
 *   `DB_PORT`: 5432
 *   `DB_NAME`: financedb
-*   `REDIS_PORT`: 6379
+*   `PORT`: 8080
 
 ## Local Installation
 
 1. Clone the repository and navigate to the backend directory.
-2. Initialize environment configuration: `cp .env.example .env`.
+2. Initialize environment: `cp .env.example .env`.
 3. Download dependencies: `go mod tidy`.
-4. Execute the binary: `go run ./cmd/api/main.go`.
-5. Access the interactive documentation at `http://localhost:8080/docs/index.html`.
+4. Run: `go run ./cmd/api/main.go`.
+5. Access Swagger at `http://localhost:8080/docs/index.html`.
+
+## Sample Users
+
+| Role    | Email               |
+|--------|---------------------|
+| Admin   | admin@finance.com   |
+| Analyst | analyst@finance.com |
+| Viewer  | viewer@finance.com  |
+
+---
+
+## How to Test the API
+
+1. Open Swagger:
+https://finance-dashboard-t11s.onrender.com/docs/index.html  
+
+2. Login:
+
+POST /api/v1/auth/login
+
+Example:
+{
+  "email": "admin@finance.com"
+}
+
+3. Copy JWT token
+
+4. Click "Authorize" in Swagger and paste:
+Bearer <token>
+
+5. Test endpoints:
+- GET /api/v1/transactions
+- POST /api/v1/transactions
+- GET /api/v1/summary
+
+---
+
+## Deployment Notes
+
+- Uses Neon PostgreSQL with sslmode=require
+- Deployed on Render using dynamic PORT binding
