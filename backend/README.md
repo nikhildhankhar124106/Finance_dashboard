@@ -1,65 +1,86 @@
-# Finance Dashboard API
+# Finance Dashboard Service
 
-A professional-grade financial management backend developed with Go (Golang). This system provides a robust architecture for real-time transaction tracking, multi-dimensional financial analytics, and multi-layered access control.
+A production-ready financial management system built with Go (Golang). This service provides a robust architectural foundation for real-time transaction tracking, multi-dimensional analytics, and automated role-based access control.
 
 ## Deployment Status
 
-*   **Production URL**: [https://finance-dashboard-t11s.onrender.com](https://finance-dashboard-t11s.onrender.com)
-*   **API Documentation**: [https://finance-dashboard-t11s.onrender.com/docs/index.html](https://finance-dashboard-t11s.onrender.com/docs/index.html)
+*   **Production Environment**: [https://finance-dashboard-t11s.onrender.com](https://finance-dashboard-t11s.onrender.com)
+*   **API Documentation (Swagger)**: [https://finance-dashboard-t11s.onrender.com/docs/index.html](https://finance-dashboard-t11s.onrender.com/docs/index.html)
 *   **System Health**: [https://finance-dashboard-t11s.onrender.com/health](https://finance-dashboard-t11s.onrender.com/health)
+
+## Architecture Overview
+
+The system is developed using Domain-Driven Design (DDD) principles, ensuring clear separation of concerns between business logic, persistence, and external communication layers.
+
+### Technical Stack
+*   **Runtime**: Go 1.21+ (Gin Web Framework)
+*   **Persistence**: PostgreSQL 16 (GORM ORM)
+*   **Cache**: Redis 7.0 (Distributed caching for analytics)
+*   **Security**: JWT (HMAC-SHA256), token-bucket rate limiting
+*   **Observability**: Structured JSON logging (slog)
+
+### Directory Structure
+```text
+├── cmd/api           # Application entry point
+├── domain/models     # GORM schemas and domain entities
+├── handler/api       # HTTP handlers and request orchestration
+├── handler/middleware # Auth, RBAC, Rate-limiting, Audit Logging
+├── infrastructure    # Database and Redis connection adapters
+├── repository        # Data persistence implementation
+├── service           # Core business logic and orchestration
+└── pkg               # Shared utilities (Auth, Logging)
+```
+
+## Security & Access Control
+
+Access control is enforced globally via a dedicated JWT middleware that extracts claims and validates roles against a persistent user store.
+
+### Permission Matrix
+
+| Endpoint | Method | Admin | Analyst | Viewer |
+| :--- | :--- | :---: | :---: | :---: |
+| `/api/v1/users` | POST | Read/Write | x | x |
+| `/api/v1/users` | GET | Read | Read | Read |
+| `/api/v1/transactions` | POST | Read/Write | x | x |
+| `/api/v1/transactions` | GET | Read | Read | Read (Scoped) |
+| `/api/v1/summary` | GET | Read | Read | Read |
+| `/api/v1/system/logs` | DELETE| Read/Write | x | x |
 
 ## Core Technical Features
 
-### 1. Advanced Persistence Layer
-*   **GORM Integration**: Seamless Postgres ORM mapping with automated schema migrations.
-*   **Soft Deletes**: Native support for record recovery via state-based deletion.
-*   **Global Search**: High-performance PostgreSQL pattern matching (ILIKE) across categories and notes.
-*   **Sequence Synchronization**: Automatic primary key sequence alignment to prevent primary key conflicts in cloud environments.
+### Advanced Persistence
+*   **State-Based Deletion**: Records utilize GORM `DeletedAt` for soft-deletion recovery and audit integrity.
+*   **Global Searching**: Performance-optimized `ILIKE` pattern matching across transaction categories and notes.
+*   **Sequence Synchronization**: Automated primary key sequence alignment on startup to prevent ID conflicts in managed cloud environments.
 
-### 2. Analytics & Reporting
-*   **Multi-Level Aggregation**: Dynamic endpoints for summary metrics, category breakdowns, and monthly financial trends.
-*   **Performance Cache**: Redis-backed aggregation layer with transparent database fallback for maximum reliability.
-
-### 3. Security & Access Control
-*   **JWT Authentication**: Secure Bearer token implementation using industry-standard HMAC-SHA256 signing.
-*   **RBAC (Role-Based Access Control)**: Granular permission enforcement at the route level.
-
-| Role | Permissions | Description |
-| :--- | :--- | :--- |
-| **Admin** | Full Access | Can manage users, transactions, system logs, and view all analytics. |
-| **Analyst** | Read + Analytics | Access to all transaction data and full dashboard summaries. |
-| **Viewer** | Read Scoped | Restricted to viewing their own transactions and basic summary data. |
-
-## Technical Architecture
-
-### Middleware & Interceptors
-The application utilizes a sequence of reusable middleware layers for consistent request processing:
-*   **Audit Layer**: Automatically logs all write operations (POST/PUT/PATCH/DELETE) and system mutations to the `ActivityLog` table.
-*   **Rate Limiting**: Protects against automated abuse using token bucket algorithms.
-*   **Auth Orchestrator**: Extracts JWT claims and populates the request context with verified `user_id` and `role`.
-
-### Validation Strategy
-All incoming payloads are strictly validated using the `validator/v10` package via Gin's `binding` tags. This ensures that:
-*   Required fields are present.
-*   Data types (amounts, dates) conform to financial precision standards.
-*   Enums (Transaction Type, Role) are strictly enforced.
+### Transaction Management
+*   **Advanced Filtering**: Supports multi-parameter filtering (category, type, date), dynamic sorting, and offset-based pagination.
+*   **Analytics Aggregation**: Real-time spending analysis across categories and monthly trends with Redis-backed optimized lookups.
 
 ## Environment Configuration
 
-The application is fully configurable via environment variables. For production (Render), ensure the following are set:
+The application implements a robust configuration layer that prioritizes system environment variables for production security while providing local development defaults.
+
+### Production (Neon/Render)
+The following variables are mandatory for production environments:
 
 | Variable | Requirement | Description |
 | :--- | :--- | :--- |
-| `APP_ENV` | Optional | Set to `production` to enable Release Mode and SSL. |
-| `DB_URL` | **Required** | The Neon PostgreSQL connection string (supports `sslmode=require`). |
-| `JWT_SECRET` | **Required** | The secure key used for signing JWT tokens. |
-| `REDIS_URL` | Optional | Connection string for distributed caching. |
-| `PORT` | Dynamic | Render dynamically binds this to the server listener. |
+| `DB_URL` | Required | Standard connection string for PostgreSQL (supports `sslmode=require`). |
+| `JWT_SECRET` | Required | Secure key for HMAC-SHA256 token signing. |
+| `APP_ENV` | Optional | Set to `production` to enable Release Mode. |
+| `PORT` | Dynamic | Port binding for the Render service listener. |
+
+### Local Development
+Defaults are provided for local `localhost` development:
+*   `DB_PORT`: 5432
+*   `DB_NAME`: financedb
+*   `REDIS_PORT`: 6379
 
 ## Local Installation
 
 1. Clone the repository and navigate to the backend directory.
-2. Initialize environment: `cp .env.example .env`.
+2. Initialize environment configuration: `cp .env.example .env`.
 3. Download dependencies: `go mod tidy`.
-4. Launch local development server: `go run ./cmd/api/main.go`.
-5. Access Swagger UI at `http://localhost:8080/docs/index.html`.
+4. Execute the binary: `go run ./cmd/api/main.go`.
+5. Access the interactive documentation at `http://localhost:8080/docs/index.html`.
