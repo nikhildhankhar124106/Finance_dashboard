@@ -13,9 +13,17 @@ import (
 var DB *gorm.DB
 
 func ConnectPostgres(cfg *config.Config) error {
-	// Reverted to dynamic mapping -> Hardcoding proved the Go parser was working accurately, but the DB password itself is rejecting you!
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=UTC",
-		cfg.DBHost, cfg.DBUser, cfg.DBPassword, cfg.DBName, cfg.DBPort)
+	var dsn string
+	// Priority: If a full DATABASE_URL is provided, use it natively.
+	if cfg.DatabaseURL != "" {
+		dsn = cfg.DatabaseURL
+		slog.Info("Using full DATABASE_URL connection string for PostgreSQL.")
+	} else {
+		// Use individual components with the configured SSL mode.
+		dsn = fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=UTC",
+			cfg.DBHost, cfg.DBUser, cfg.DBPassword, cfg.DBName, cfg.DBPort, cfg.DBSSLMode)
+		slog.Info("Using decomposed connection parameters for PostgreSQL.", "sslmode", cfg.DBSSLMode)
+	}
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {

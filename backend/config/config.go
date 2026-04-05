@@ -8,15 +8,17 @@ import (
 )
 
 type Config struct {
-	Port       string
-	DBHost     string
-	DBUser     string
-	DBPassword string
-	DBName     string
-	DBPort     string
-	RedisHost  string
-	RedisPort  string
-	AppEnv     string
+	Port        string
+	DatabaseURL string // New: Support for connection strings (Render/Neon)
+	DBHost      string
+	DBUser      string
+	DBPassword  string
+	DBName      string
+	DBPort      string
+	DBSSLMode   string // New: Configurable SSL Mode
+	RedisHost   string
+	RedisPort   string
+	AppEnv      string
 }
 
 func LoadConfig() *Config {
@@ -25,16 +27,25 @@ func LoadConfig() *Config {
 		log.Println("Warning: No .env file found, relying on system environment variables")
 	}
 
+	appEnv := getEnv("APP_ENV", "development")
+	// Automatic SSL Mode: Neon/Cloud usually require SSL, while local doesn't.
+	defaultSSL := "disable"
+	if appEnv == "production" {
+		defaultSSL = "require"
+	}
+
 	return &Config{
-		Port:       getEnv("PORT", "8080"),
-		DBHost:     getEnv("DB_HOST", "localhost"),
-		DBUser:     getEnv("DB_USER", "postgres"),
-		DBPassword: getEnv("DB_PASSWORD", "secret"),
-		DBName:     getEnv("DB_NAME", "financedb"),
-		DBPort:     getEnv("DB_PORT", "5432"),
-		RedisHost:  getEnv("REDIS_HOST", "localhost"),
-		RedisPort:  getEnv("REDIS_PORT", "6379"),
-		AppEnv:     getEnv("APP_ENV", "development"),
+		Port:        getEnv("PORT", "8080"),
+		DatabaseURL: getEnv("DATABASE_URL", ""),
+		DBHost:      getEnv("DB_HOST", "localhost"),
+		DBUser:      getEnv("DB_USER", "postgres"),
+		DBPassword:  getEnv("DB_PASSWORD", "secret"),
+		DBName:      getEnv("DB_NAME", "financedb"),
+		DBPort:      getEnv("DB_PORT", "5432"),
+		DBSSLMode:   getEnv("DB_SSL_MODE", defaultSSL),
+		RedisHost:   getEnv("REDIS_HOST", "localhost"),
+		RedisPort:   getEnv("REDIS_PORT", "6379"),
+		AppEnv:      appEnv,
 	}
 }
 
