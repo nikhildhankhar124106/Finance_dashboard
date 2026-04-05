@@ -107,6 +107,7 @@ func main() {
 	// Global Audit Layer for write operations natively
 	r.Use(middleware.AuditMiddleware(DB))
 
+	r.GET("/", WelcomePage)
 	r.GET("/health", HealthCheck)
 
 	r.GET("/docs/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
@@ -178,6 +179,17 @@ func main() {
 // @Router /v1/health [get]
 func HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok", "version": "1.0"})
+}
+
+// WelcomePage returns basic API metadata and navigation links
+func WelcomePage(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{
+		"message":       "Welcome to the Finance Dashboard API",
+		"status":        "Live",
+		"version":       "1.0 (v1)",
+		"documentation": "/docs/index.html",
+		"health":        "/health",
+	})
 }
 
 // DeleteSystemLogs godoc
