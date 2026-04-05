@@ -88,6 +88,10 @@ Defaults are provided for local development:
 *   `DB_PORT`: 5432
 *   `DB_NAME`: financedb
 *   `PORT`: 8080
+*   `DB_HOST`: localhost
+*   `DB_USER`: postgres
+*   `DB_PAASWORD`: yourpassword
+*   `APP_ENV`: development
 
 ## Local Installation
 
