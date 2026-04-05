@@ -45,7 +45,7 @@ func main() {
 
 	// Auto-migrate database models utilizing implicit DeleteAt columns for soft-deletes inherently.
 	DB := db.GetDB()
-	err = DB.AutoMigrate(&models.User{}, &models.Transaction{})
+	err = DB.AutoMigrate(&models.User{}, &models.Transaction{}, &models.ActivityLog{})
 	if err != nil {
 		slog.Error("Failed to auto migrate database schema", "error", err)
 		os.Exit(1)
@@ -65,6 +65,11 @@ func main() {
 		}
 	}
 
+	// Fix DB sequences to prevent primary key mismatch errors after manual ID inserts
+	if err := db.SyncSequences(DB); err != nil {
+		slog.Warn("Failed to synchronize database sequences", "error", err)
+	}
+
 	// Initialize Distributed Cache natively
 	if err := cache.ConnectRedis(cfg); err != nil {
 		slog.Warn("Redis failed starting, proceeding gracefully without cache aggregations", "error", err)
@@ -77,7 +82,7 @@ func main() {
 	authHandler := api.NewAuthHandler()
 
 	txRepo := repository.NewTransactionRepository(DB)
-	txSvc := service.NewTransactionService(txRepo)
+	txSvc := service.NewTransactionService(txRepo, userRepo)
 	txHandler := api.NewTransactionHandler(txSvc)
 
 	analyticsRepo := repository.NewAnalyticsRepository(DB)
@@ -94,6 +99,8 @@ func main() {
 	// Apply Global Middlewares spanning cleanly
 	r.Use(middleware.ErrorHandler())
 	r.Use(middleware.RateLimiter())
+	// Global Audit Layer for write operations natively
+	r.Use(middleware.AuditMiddleware(DB))
 
 	r.GET("/health", HealthCheck)
 
@@ -102,12 +109,15 @@ func main() {
 	// API VERSIONING IMPLEMENTATION explicitly grouping subsets cleanly
 	v1 := r.Group("/api/v1")
 	{
+		// Native Health Check for V1 specifically
+		v1.GET("/health", HealthCheck)
+
 		// Public Routes Setup Native Auth
 		v1.POST("/auth/login", authHandler.MockLogin)
 
 		// Protected Viewer Routes (accessible by Viewer, Analyst, Admin)
 		viewerRoutes := v1.Group("/")
-		viewerRoutes.Use(middleware.RequireAuth())
+		viewerRoutes.Use(middleware.RequireAuth(DB))
 		viewerRoutes.Use(middleware.RequireRole(string(models.RoleViewer), string(models.RoleAnalyst), string(models.RoleAdmin)))
 		{
 			viewerRoutes.GET("/users", userHandler.GetUsers) 
@@ -117,7 +127,7 @@ func main() {
 
 		// Protected Analyst Routes (accessible by Analyst, Admin)
 		analystRoutes := v1.Group("/")
-		analystRoutes.Use(middleware.RequireAuth())
+		analystRoutes.Use(middleware.RequireAuth(DB))
 		analystRoutes.Use(middleware.RequireRole(string(models.RoleViewer), string(models.RoleAnalyst), string(models.RoleAdmin)))
 		{
 			analystRoutes.GET("/summary", analyticsHandler.GetSummary)
@@ -127,13 +137,15 @@ func main() {
 
 		// Protected Admin Routes (accessible by Admin ONLY)
 		adminRoutes := v1.Group("/")
-		adminRoutes.Use(middleware.RequireAuth())
+		adminRoutes.Use(middleware.RequireAuth(DB))
 		adminRoutes.Use(middleware.RequireRole(string(models.RoleAdmin)))
 		{
 			adminRoutes.POST("/users", userHandler.CreateUser) 
+			adminRoutes.PATCH("/users/:id/status", userHandler.UpdateUserStatus)
 			adminRoutes.POST("/transactions", txHandler.CreateTransaction)
 			adminRoutes.PUT("/transactions/:id", txHandler.UpdateTransaction)
 			adminRoutes.DELETE("/transactions/:id", txHandler.DeleteTransaction)
+			adminRoutes.GET("/transactions/export", txHandler.ExportTransactions)
 			
 			adminRoutes.DELETE("/system/logs", DeleteSystemLogs)
 		}
@@ -181,7 +193,7 @@ func DeleteSystemLogs(c *gin.Context) {
 // @Tags system
 // @Produce json
 // @Success 200 {object} map[string]string
-// @Router /../v2/health [get]
+// @Router /v2/health [get]
 func V2HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok", "version": "2.0"})
 }

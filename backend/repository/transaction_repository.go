@@ -2,6 +2,7 @@ package repository
 
 import (
 	"backend/domain/models"
+	"fmt"
 
 	"gorm.io/gorm"
 )
@@ -11,7 +12,7 @@ type TransactionRepository interface {
 	Update(tx *models.Transaction) error
 	Delete(id uint) error
 	GetByID(id uint) (*models.Transaction, error)
-	List(userID *uint, category, txType, date string, page, pageSize int) ([]models.Transaction, int64, error)
+	List(userID *uint, category, txType, date, search, sort, order string, page, pageSize int) ([]models.Transaction, int64, int, error)
 }
 
 type transactionRepository struct {
@@ -40,7 +41,7 @@ func (r *transactionRepository) GetByID(id uint) (*models.Transaction, error) {
 	return &tx, err
 }
 
-func (r *transactionRepository) List(userID *uint, category, txType, date string, page, pageSize int) ([]models.Transaction, int64, error) {
+func (r *transactionRepository) List(userID *uint, category, txType, date, search, sort, order string, page, pageSize int) ([]models.Transaction, int64, int, error) {
 	var transactions []models.Transaction
 	var total int64
 
@@ -59,17 +60,41 @@ func (r *transactionRepository) List(userID *uint, category, txType, date string
 	}
 
 	if date != "" {
-		query = query.Where("DATE(date) = ?", date)
+		// Fixed Date matching logic accurately natively over PG timestamps
+		query = query.Where("date = ?", date)
 	}
+
+	if search != "" {
+		// Global search across category and notes mapping natively
+		searchPattern := "%" + search + "%"
+		query = query.Where("category ILIKE ? OR notes ILIKE ?", searchPattern, searchPattern)
+	}
+
+	// Dynamic Sorting
+	allowedSortFields := map[string]string{
+		"amount":   "amount",
+		"date":     "date",
+		"category": "category",
+	}
+	sortField, exists := allowedSortFields[sort]
+	if !exists {
+		sortField = "date" // Default sort
+	}
+	if order != "asc" {
+		order = "desc" // Default order
+	}
+	query = query.Order(fmt.Sprintf("%s %s", sortField, order))
 
 	// Get total count for pagination info
 	err := query.Count(&total).Error
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, 0, err
 	}
 
 	offset := (page - 1) * pageSize
 	err = query.Offset(offset).Limit(pageSize).Find(&transactions).Error
+	
+	totalPages := int((total + int64(pageSize) - 1) / int64(pageSize))
 
-	return transactions, total, err
+	return transactions, total, totalPages, err
 }

@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	_ "backend/domain/models"
 	"backend/service"
 
 	"github.com/gin-gonic/gin"
@@ -22,6 +23,10 @@ func NewUserHandler(userService service.UserService) *UserHandler {
 type CreateUserInput struct {
 	Email string `json:"email" binding:"required,email" example:"user@example.com"`
 	Name  string `json:"name" binding:"required" example:"John Doe"`
+}
+
+type UpdateUserStatusInput struct {
+	IsActive bool `json:"is_active"`
 }
 
 // CreateUser godoc
@@ -98,4 +103,40 @@ func (h *UserHandler) GetUsers(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, users)
+}
+
+// UpdateUserStatus godoc
+// @Summary Update user status (Active/Inactive)
+// @Description Activates or deactivates a user
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param Authorization header string true "Bearer Token"
+// @Param id path int true "User ID"
+// @Param status body UpdateUserStatusInput true "Status payload"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/{id}/status [patch]
+func (h *UserHandler) UpdateUserStatus(c *gin.Context) {
+	idParam := c.Param("id")
+	id, err := strconv.ParseUint(idParam, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
+		return
+	}
+
+	var input UpdateUserStatusInput
+	if err := c.ShouldBindJSON(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid input"})
+		return
+	}
+
+	err = h.userService.UpdateUserStatus(uint(id), input.IsActive)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user status"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "User status updated successfully"})
 }

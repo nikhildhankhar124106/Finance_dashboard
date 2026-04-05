@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/../v2/health": {
+        "/v2/health": {
             "get": {
                 "description": "Returns the health status of the V2 API",
                 "produces": [
@@ -323,6 +323,24 @@ const docTemplate = `{
                         "description": "Filter by exact date (YYYY-MM-DD)",
                         "name": "date",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Global search (category/notes)",
+                        "name": "search",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sort field (amount, date, category)",
+                        "name": "sort",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Order (asc, desc)",
+                        "name": "order",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -400,6 +418,26 @@ const docTemplate = `{
                         "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/apperrors.AppError"
+                        }
+                    }
+                }
+            }
+        },
+        "/transactions/export": {
+            "get": {
+                "description": "Generates a CSV file of the user's financial transactions",
+                "produces": [
+                    "text/csv"
+                ],
+                "tags": [
+                    "transactions"
+                ],
+                "summary": "Export transactions to CSV",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
@@ -612,6 +650,43 @@ const docTemplate = `{
                 }
             }
         },
+        "/users/{id}/status": {
+            "patch": {
+                "description": "Activates or deactivates a user",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Update user status (Active/Inactive)",
+                "parameters": [
+                    {
+                        "description": "Status payload",
+                        "name": "status",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.UpdateUserStatusInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/users/{id}": {
             "get": {
                 "description": "Fetch details of a specific user",
@@ -718,6 +793,14 @@ const docTemplate = `{
                 "name": {
                     "type": "string",
                     "example": "John Doe"
+                }
+            }
+        },
+        "api.UpdateUserStatusInput": {
+            "type": "object",
+            "properties": {
+                "is_active": {
+                    "type": "boolean"
                 }
             }
         },

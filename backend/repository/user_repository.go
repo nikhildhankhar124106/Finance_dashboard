@@ -10,6 +10,7 @@ type UserRepository interface {
 	Create(user *models.User) error
 	GetByID(id uint) (*models.User, error)
 	GetAll() ([]models.User, error)
+	UpdateStatus(id uint, isActive bool) error
 }
 
 type userRepository struct {
@@ -34,4 +35,8 @@ func (r *userRepository) GetAll() ([]models.User, error) {
 	var users []models.User
 	err := r.db.Find(&users).Error
 	return users, err
+}
+
+func (r *userRepository) UpdateStatus(id uint, isActive bool) error {
+	return r.db.Model(&models.User{}).Where("id = ?", id).Update("is_active", isActive).Error
 }

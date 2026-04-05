@@ -19,6 +19,7 @@ type User struct {
 	Email        string         `gorm:"uniqueIndex;not null" json:"email"`
 	Name         string         `gorm:"not null" json:"name"`
 	Role         UserRole       `gorm:"type:varchar(20);default:'Viewer';not null" json:"role"`
+	IsActive     bool           `gorm:"default:true" json:"is_active"`
 	Transactions []Transaction  `gorm:"foreignKey:UserID" json:"transactions,omitempty"`
 	CreatedAt    time.Time      `json:"created_at"`
 	UpdatedAt    time.Time      `json:"updated_at"`

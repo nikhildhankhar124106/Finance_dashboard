@@ -56,7 +56,7 @@ func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 	var input CreateTransactionInput
 
 	if err := c.ShouldBindJSON(&input); err != nil {
-		c.Error(err) 
+		c.JSON(http.StatusBadRequest, apperrors.NewValidationError(err.Error()))
 		return
 	}
 
@@ -98,6 +98,9 @@ func (h *TransactionHandler) GetTransactions(c *gin.Context) {
 
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	pageSize, _ := strconv.Atoi(c.DefaultQuery("page_size", "10"))
+	search := c.Query("search")
+	sort := c.Query("sort")
+	order := c.Query("order")
 
 	var userID *uint
 	roleVal, exists := c.Get("role")
@@ -116,18 +119,53 @@ func (h *TransactionHandler) GetTransactions(c *gin.Context) {
 		userID = &uidCast
 	}
 
-	transactions, total, err := h.txService.GetTransactions(userID, category, txType, dateStr, page, pageSize)
+	transactions, total, totalPages, err := h.txService.GetTransactions(userID, category, txType, dateStr, search, sort, order, page, pageSize)
 	if err != nil {
 		c.Error(apperrors.NewInternalError("Failed to fetch transactions"))
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"data":  transactions,
-		"total": total,
-		"page":  page,
-		"limit": pageSize,
+		"data":        transactions,
+		"total":       total,
+		"total_pages": totalPages,
+		"page":        page,
+		"limit":       pageSize,
 	})
+}
+
+// ExportTransactions godoc
+// @Summary Export transactions to CSV
+// @Description Generates a CSV file of the user's financial transactions
+// @Tags transactions
+// @Produce text/csv
+// @Param Authorization header string true "Bearer Token"
+// @Success 200 {string} string "CSV data"
+// @Failure 401 {object} apperrors.AppError
+// @Failure 500 {object} apperrors.AppError
+// @Router /transactions/export [get]
+func (h *TransactionHandler) ExportTransactions(c *gin.Context) {
+	var userID *uint
+	roleVal, exists := c.Get("role")
+	if !exists {
+		c.Error(apperrors.NewUnauthorizedError("Role not set"))
+		return
+	}
+
+	if roleVal.(string) != "Admin" {
+		uid, _ := c.Get("user_id")
+		uidCast := uid.(uint)
+		userID = &uidCast
+	}
+
+	data, err := h.txService.ExportTransactions(userID)
+	if err != nil {
+		c.Error(apperrors.NewInternalError("Failed to export transactions"))
+		return
+	}
+
+	c.Header("Content-Disposition", "attachment; filename=transactions_export.csv")
+	c.Data(http.StatusOK, "text/csv", data)
 }
 
 // UpdateTransaction godoc

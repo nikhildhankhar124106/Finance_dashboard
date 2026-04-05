@@ -1,0 +1,2 @@
+Max ID in users: 3
+Sequence last_value: 2

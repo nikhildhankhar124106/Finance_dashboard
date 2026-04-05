@@ -9,6 +9,7 @@ type UserService interface {
 	CreateUser(email, name string) (*models.User, error)
 	GetUser(id uint) (*models.User, error)
 	GetUsers() ([]models.User, error)
+	UpdateUserStatus(id uint, isActive bool) error
 }
 
 type userService struct {
@@ -37,4 +38,8 @@ func (s *userService) GetUser(id uint) (*models.User, error) {
 
 func (s *userService) GetUsers() ([]models.User, error) {
 	return s.repo.GetAll()
+}
+
+func (s *userService) UpdateUserStatus(id uint, isActive bool) error {
+	return s.repo.UpdateStatus(id, isActive)
 }

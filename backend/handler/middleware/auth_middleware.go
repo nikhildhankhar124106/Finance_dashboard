@@ -4,12 +4,14 @@ import (
 	"net/http"
 	"strings"
 
+	"backend/domain/models"
 	"backend/pkg/auth"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
-func RequireAuth() gin.HandlerFunc {
+func RequireAuth(db *gorm.DB) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
@@ -32,6 +34,18 @@ func RequireAuth() gin.HandlerFunc {
 
 		c.Set("user_id", claims.UserID)
 		c.Set("role", claims.Role)
+
+		// Verification of active status natively linking against persistent states
+		var user models.User
+		if err := db.First(&user, claims.UserID).Error; err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "User no longer exists"})
+			return
+		}
+		if !user.IsActive {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Account deactivated. Please contact administrator."})
+			return
+		}
+
 		c.Next()
 	}
 }

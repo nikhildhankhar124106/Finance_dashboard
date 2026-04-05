@@ -44,8 +44,8 @@ func getVisitor(ip string) *rate.Limiter {
 
 	client, exists := clients[ip]
 	if !exists {
-		// 5 requests per second natively scaled limits, bursting to 10 maximum.
-		limiter := rate.NewLimiter(5, 10)
+		// 1.66 requests per second (approx 100 req/min) with a burst of 5 maximum natively.
+		limiter := rate.NewLimiter(rate.Limit(1.66), 5)
 		clients[ip] = &Client{limiter: limiter, lastSeen: time.Now()}
 		return limiter
 	}
@@ -56,6 +56,14 @@ func getVisitor(ip string) *rate.Limiter {
 
 func RateLimiter() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// Bypassing rate limiting for static documentation assets to prevent UI lockouts
+		if c.Request.URL.Path == "/docs" || c.Request.URL.Path == "/docs/" || 
+		   (len(c.Request.URL.Path) >= 6 && c.Request.URL.Path[:6] == "/docs/") ||
+		   (len(c.Request.URL.Path) >= 8 && c.Request.URL.Path[:8] == "/swagger/") {
+			c.Next()
+			return
+		}
+
 		clientIP := c.ClientIP()
 		limiter := getVisitor(clientIP)
 

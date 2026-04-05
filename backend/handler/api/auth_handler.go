@@ -21,7 +21,7 @@ type LoginRequest struct {
 
 // MockLogin godoc
 // @Summary Mock login for authentication
-// @Description Logs in a user mockly (admin@finance.com, analyst@finance.com, viewer@finance.com) and returns a JWT token
+// @Description Logs in a user mockly (admin@test.com, analyst@test.com, viewer@test.com) and returns a JWT token
 // @Tags auth
 // @Accept json
 // @Produce json
@@ -44,17 +44,17 @@ func (h *AuthHandler) MockLogin(c *gin.Context) {
 	var role string
 
 	switch req.Email {
-	case "admin@finance.com":
+	case "admin@finance.com", "admin@test.com":
 		userID = 1
 		role = string(models.RoleAdmin)
-	case "analyst@finance.com":
+	case "analyst@finance.com", "analyst@test.com":
 		userID = 2
 		role = string(models.RoleAnalyst)
-	case "viewer@finance.com":
+	case "viewer@finance.com", "viewer@test.com":
 		userID = 3
 		role = string(models.RoleViewer)
 	default:
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials. Try admin@, analyst@, or viewer@finance.com"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid credentials. Try admin@, analyst@, or viewer@test.com"})
 		return
 	}
 

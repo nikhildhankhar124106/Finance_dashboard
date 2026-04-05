@@ -1,0 +1,7 @@
+Column: id, Default: nextval('users_id_seq'::regclass), Type: bigint
+Column: email, Default: <nil>, Type: text
+Column: name, Default: <nil>, Type: text
+Column: role, Default: 'Viewer'::character varying, Type: character varying
+Column: created_at, Default: <nil>, Type: timestamp with time zone
+Column: updated_at, Default: <nil>, Type: timestamp with time zone
+Column: deleted_at, Default: <nil>, Type: timestamp with time zone
