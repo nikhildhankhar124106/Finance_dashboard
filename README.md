@@ -128,7 +128,7 @@ Example:
 3. Copy JWT token
 
 4. Click "Authorize" in Swagger and paste:
-Bearer <token>
+Bearer token
 
 5. Test endpoints:
 - GET /api/v1/transactions
