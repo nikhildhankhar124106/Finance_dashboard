@@ -34,9 +34,14 @@ func LoadConfig() *Config {
 		defaultSSL = "require"
 	}
 
+	dbURL := getEnv("DATABASE_URL", "")
+	if dbURL == "" {
+		dbURL = getEnv("DB_URL", "") // Check alternate naming convention used in user screenshot
+	}
+
 	return &Config{
 		Port:        getEnv("PORT", "8080"),
-		DatabaseURL: getEnv("DATABASE_URL", ""),
+		DatabaseURL: dbURL,
 		DBHost:      getEnv("DB_HOST", "localhost"),
 		DBUser:      getEnv("DB_USER", "postgres"),
 		DBPassword:  getEnv("DB_PASSWORD", "secret"),
