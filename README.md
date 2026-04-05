@@ -1,105 +1,86 @@
-<div align="center">
-  <h1>📊 Finance Dashboard API</h1>
-  <p>A production-ready Golang REST architecture backing a high-performance Financial Analytics Dashboard.</p>
-</div>
+# Finance Dashboard Service
 
----
+A production-ready financial management system built with Go (Golang). This service provides a robust architectural foundation for real-time transaction tracking, multi-dimensional analytics, and automated role-based access control.
 
-## 📖 Project Overview
-This is a production-grade backend service built with **Clean Architecture**. It features deep internal auditing, strict role-based access control (RBAC), and professional financial data processing.
+## Deployment Status
 
-### Key Enhancements:
-- **Audit Trail**: Every data mutation is recorded for security and compliance.
-- **User Status Management**: Real-time account activation/deactivation.
-- **Advanced Data Processing**: Search, multi-field sorting, and CSV export.
-- **Resilient Infrastructure**: Integrated rate limiting and centralized error handling.
+*   **Production Environment**: [https://finance-dashboard-t11s.onrender.com](https://finance-dashboard-t11s.onrender.com)
+*   **API Documentation (Swagger)**: [https://finance-dashboard-t11s.onrender.com/docs/index.html](https://finance-dashboard-t11s.onrender.com/docs/index.html)
+*   **System Health**: [https://finance-dashboard-t11s.onrender.com/health](https://finance-dashboard-t11s.onrender.com/health)
 
----
+## Architecture Overview
 
-## 🛠️ Tech Stack
-- **Language**: Go 1.21+
-- **Framework**: [Gin-Gonic](https://github.com/gin-gonic/gin)
-- **Database**: PostgreSQL (GORM)
-- **Security**: JWT Authentication + custom RBAC Middleware
-- **Documentation**: Swagger OpenAPI
-- **Testing**: Native Go `testing` + `testify`
+The system is developed using Domain-Driven Design (DDD) principles, ensuring clear separation of concerns between business logic, persistence, and external communication layers.
 
----
+### Technical Stack
+*   **Runtime**: Go 1.21+ (Gin Web Framework)
+*   **Persistence**: PostgreSQL 16 (GORM ORM)
+*   **Cache**: Redis 7.0 (Distributed caching for analytics)
+*   **Security**: JWT (HMAC-SHA256), token-bucket rate limiting
+*   **Observability**: Structured JSON logging (slog)
 
-## 🔐 Roles & Access Control
-Access is determined by the `role` payload in the JWT.
-
-| Role | Permissions |
-| :--- | :--- |
-| **Admin** | Full system control. User management, total transaction visibility, data export. |
-| **Analyst** | Read-only access to global financial metrics, summaries, and trends. |
-| **Viewer** | Personal finance tracking. Restricted to their own `user_id` context. |
-
-### 🧪 Test Credentials
-| Role | Email |
-| :--- | :--- |
-| **Admin** | `admin@test.com` |
-| **Analyst** | `analyst@test.com` |
-| **Viewer** | `viewer@test.com` |
-
----
-
-## 🚀 Setup Instructions
-
-#### 1. Pre-Requisites
-- **Go** installed.
-- **PostgreSQL** running.
-
-#### 2. Local Setup
-```bash
-git clone https://github.com/nikhildhankhar124106/Finance_dashboard.git
-cd "Finance dashboard/backend"
-go mod tidy
+### Directory Structure
+```text
+├── cmd/api           # Application entry point
+├── domain/models     # GORM schemas and domain entities
+├── handler/api       # HTTP handlers and request orchestration
+├── handler/middleware # Auth, RBAC, Rate-limiting, Audit Logging
+├── infrastructure    # Database and Redis connection adapters
+├── repository        # Data persistence implementation
+├── service           # Core business logic and orchestration
+└── pkg               # Shared utilities (Auth, Logging)
 ```
 
-#### 3. Environment Config (`.env`)
-```env
-PORT=8080
-DB_HOST=localhost
-DB_USER=postgres
-DB_PASSWORD=secret
-DB_NAME=financedb
-DB_PORT=5432
-APP_ENV=development
-```
+## Security & Access Control
 
-#### 4. Run Application
-```bash
-# Optional: Seed the database with sample data
-go run ./cmd/seed
+Access control is enforced globally via a dedicated JWT middleware that extracts claims and validates roles against a persistent user store.
 
-# Start the API server
-go run ./cmd/api
-```
+### Permission Matrix
 
----
+| Endpoint | Method | Admin | Analyst | Viewer |
+| :--- | :--- | :---: | :---: | :---: |
+| `/api/v1/users` | POST | Read/Write | x | x |
+| `/api/v1/users` | GET | Read | Read | Read |
+| `/api/v1/transactions` | POST | Read/Write | x | x |
+| `/api/v1/transactions` | GET | Read | Read | Read (Scoped) |
+| `/api/v1/summary` | GET | Read | Read | Read |
+| `/api/v1/system/logs` | DELETE| Read/Write | x | x |
 
-## 📚 API Features & Documentation
+## Core Technical Features
 
-### Documentation
-- **Swagger GUI**: `http://localhost:8080/docs/index.html`
+### Advanced Persistence
+*   **State-Based Deletion**: Records utilize GORM `DeletedAt` for soft-deletion recovery and audit integrity.
+*   **Global Searching**: Performance-optimized `ILIKE` pattern matching across transaction categories and notes.
+*   **Sequence Synchronization**: Automated primary key sequence alignment on startup to prevent ID conflicts in managed cloud environments.
 
-### Advanced Transactions (`GET /api/v1/transactions`)
-Supports complex queries:
-- `search`: Searches category and notes.
-- `sort`: `amount`, `date`, or `category`.
-- `order`: `asc` or `desc`.
-- `page` & `page_size`: Paginated results with `total_pages`.
+### Transaction Management
+*   **Advanced Filtering**: Supports multi-parameter filtering (category, type, date), dynamic sorting, and offset-based pagination.
+*   **Analytics Aggregation**: Real-time spending analysis across categories and monthly trends with Redis-backed optimized lookups.
 
-### Audit & Security
-- **Export CSV**: `GET /api/v1/transactions/export` (Download CSV history).
-- **User Status**: `PATCH /api/v1/users/:id/status` (Deactivated users are blocked from all endpoints instantly).
-- **Rate Limit**: Strictly enforced at **100 requests per minute** per IP.
+## Environment Configuration
 
----
+The application implements a robust configuration layer that prioritizes system environment variables for production security while providing local development defaults.
 
-## 🧪 Testing
-Run the integration test suite to verify auth and status logic:
-```bash
-go test ./tests/...
-```
+### Production (Neon/Render)
+The following variables are mandatory for production environments:
+
+| Variable | Requirement | Description |
+| :--- | :--- | :--- |
+| `DB_URL` | Required | Standard connection string for PostgreSQL (supports `sslmode=require`). |
+| `JWT_SECRET` | Required | Secure key for HMAC-SHA256 token signing. |
+| `APP_ENV` | Optional | Set to `production` to enable Release Mode. |
+| `PORT` | Dynamic | Port binding for the Render service listener. |
+
+### Local Development
+Defaults are provided for local `localhost` development:
+*   `DB_PORT`: 5432
+*   `DB_NAME`: financedb
+*   `REDIS_PORT`: 6379
+
+## Local Installation
+
+1. Clone the repository and navigate to the backend directory.
+2. Initialize environment configuration: `cp .env.example .env`.
+3. Download dependencies: `go mod tidy`.
+4. Execute the binary: `go run ./cmd/api/main.go`.
+5. Access the interactive documentation at `http://localhost:8080/docs/index.html`.
