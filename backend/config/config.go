@@ -18,6 +18,7 @@ type Config struct {
 	DBSSLMode   string // New: Configurable SSL Mode
 	RedisHost   string
 	RedisPort   string
+	JWTSecret   string
 	AppEnv      string
 }
 
@@ -50,6 +51,7 @@ func LoadConfig() *Config {
 		DBSSLMode:   getEnv("DB_SSL_MODE", defaultSSL),
 		RedisHost:   getEnv("REDIS_HOST", "localhost"),
 		RedisPort:   getEnv("REDIS_PORT", "6379"),
+		JWTSecret:   getEnv("JWT_SECRET", "my-super-secret-key-change-in-prod"),
 		AppEnv:      appEnv,
 	}
 }

@@ -12,6 +12,7 @@ import (
 	"backend/handler/middleware"
 	"backend/infrastructure/cache"
 	"backend/infrastructure/db"
+	"backend/pkg/auth"
 	"backend/pkg/logger"
 	"backend/repository"
 	"backend/service"
@@ -40,6 +41,9 @@ func main() {
 
 	// Load Configuration natively falling back accurately onto explicit bindings 
 	cfg := config.LoadConfig()
+
+	// Initialize JWT Secret securely from environment
+	auth.SetJWTSecret(cfg.JWTSecret)
 
 	// Connect to Database securely
 	err := db.ConnectPostgres(cfg)

@@ -7,7 +7,12 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var JWTSecretKey = []byte("my-super-secret-key-change-in-prod")
+var JWTSecretKey []byte
+
+// SetJWTSecret allows the application to inject a secure key at startup
+func SetJWTSecret(secret string) {
+	JWTSecretKey = []byte(secret)
+}
 
 type Claims struct {
 	UserID uint   `json:"user_id"`
