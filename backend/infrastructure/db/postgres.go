@@ -40,12 +40,18 @@ func SyncSequences(db *gorm.DB) error {
 		var maxID int
 		// COALESCE(MAX(id), 0) handles empty tables gracefully.
 		db.Raw(fmt.Sprintf("SELECT COALESCE(MAX(id), 0) FROM %s", table)).Scan(&maxID)
+		// Dynamically obtain the sequence name for the table's primary key (usually 'id')
+		var sequenceName string
+		db.Raw("SELECT pg_get_serial_sequence(?, 'id')", table).Scan(&sequenceName)
 		
-		// setval sets the sequence's current value. The next call to nextval will return maxID + 1.
-		// If maxID is 0, we don't need to do anything as the sequence starts at 1 by default.
+		if sequenceName == "" {
+			// Fallback to standard naming convention if dynamic lookup fails
+			sequenceName = fmt.Sprintf("%s_id_seq", table)
+		}
+
 		if maxID > 0 {
-			slog.Info("Synchronizing sequence for table", "table", table, "max_id", maxID)
-			err := db.Exec(fmt.Sprintf("SELECT setval('%s_id_seq', %d)", table, maxID)).Error
+			slog.Info("Synchronizing sequence", "table", table, "sequence", sequenceName, "max_id", maxID)
+			err := db.Exec("SELECT setval(?, ?, true)", sequenceName, maxID).Error
 			if err != nil {
 				slog.Error("Failed to synchronize sequence", "table", table, "error", err)
 				return err

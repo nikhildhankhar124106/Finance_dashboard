@@ -30,7 +30,7 @@ type LoginRequest struct {
 // @Failure 400 {object} map[string]string
 // @Failure 401 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /auth/login [post]
+// @Router /v1/auth/login [post]
 func (h *AuthHandler) MockLogin(c *gin.Context) {
 	var req LoginRequest
 

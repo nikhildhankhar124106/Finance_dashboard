@@ -45,13 +45,13 @@ type UpdateTransactionInput struct {
 // @Tags transactions
 // @Accept json
 // @Produce json
-// @Param Authorization header string true "Bearer Token"
+// @Security BearerAuth
 // @Param transaction body CreateTransactionInput true "Transaction payload"
 // @Success 201 {object} models.Transaction
 // @Failure 400 {object} apperrors.AppError
 // @Failure 401 {object} apperrors.AppError
 // @Failure 500 {object} apperrors.AppError
-// @Router /transactions [post]
+// @Router /v1/transactions [post]
 func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 	var input CreateTransactionInput
 
@@ -81,7 +81,7 @@ func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 // @Description Returns transaction paginated list optionally filtered by category, type, and date
 // @Tags transactions
 // @Produce json
-// @Param Authorization header string true "Bearer Token"
+// @Security BearerAuth
 // @Param page query int false "Page number" default(1)
 // @Param page_size query int false "Limits per page" default(10)
 // @Param category query string false "Filter by category"
@@ -90,7 +90,7 @@ func (h *TransactionHandler) CreateTransaction(c *gin.Context) {
 // @Success 200 {object} map[string]interface{}
 // @Failure 401 {object} apperrors.AppError
 // @Failure 500 {object} apperrors.AppError
-// @Router /transactions [get]
+// @Router /v1/transactions [get]
 func (h *TransactionHandler) GetTransactions(c *gin.Context) {
 	category := c.Query("category")
 	txType := c.Query("type")
@@ -139,11 +139,11 @@ func (h *TransactionHandler) GetTransactions(c *gin.Context) {
 // @Description Generates a CSV file of the user's financial transactions
 // @Tags transactions
 // @Produce text/csv
-// @Param Authorization header string true "Bearer Token"
+// @Security BearerAuth
 // @Success 200 {string} string "CSV data"
 // @Failure 401 {object} apperrors.AppError
 // @Failure 500 {object} apperrors.AppError
-// @Router /transactions/export [get]
+// @Router /v1/transactions/export [get]
 func (h *TransactionHandler) ExportTransactions(c *gin.Context) {
 	var userID *uint
 	roleVal, exists := c.Get("role")
@@ -174,13 +174,13 @@ func (h *TransactionHandler) ExportTransactions(c *gin.Context) {
 // @Tags transactions
 // @Accept json
 // @Produce json
-// @Param Authorization header string true "Bearer Token"
+// @Security BearerAuth
 // @Param id path int true "Transaction ID"
 // @Param transaction body UpdateTransactionInput true "Updated values"
 // @Success 200 {object} models.Transaction
 // @Failure 400 {object} apperrors.AppError
 // @Failure 404 {object} apperrors.AppError
-// @Router /transactions/{id} [put]
+// @Router /v1/transactions/{id} [put]
 func (h *TransactionHandler) UpdateTransaction(c *gin.Context) {
 	idParam := c.Param("id")
 	id, err := strconv.ParseUint(idParam, 10, 32)
@@ -210,12 +210,12 @@ func (h *TransactionHandler) UpdateTransaction(c *gin.Context) {
 // @Description Performs hard deletion of transaction record
 // @Tags transactions
 // @Produce json
-// @Param Authorization header string true "Bearer Token"
+// @Security BearerAuth
 // @Param id path int true "Transaction ID"
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} apperrors.AppError
 // @Failure 500 {object} apperrors.AppError
-// @Router /transactions/{id} [delete]
+// @Router /v1/transactions/{id} [delete]
 func (h *TransactionHandler) DeleteTransaction(c *gin.Context) {
 	idParam := c.Param("id")
 	id, err := strconv.ParseUint(idParam, 10, 32)

@@ -1,8 +1,10 @@
 package api
 
 import (
+	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 
 	_ "backend/domain/models"
 	"backend/service"
@@ -35,12 +37,12 @@ type UpdateUserStatusInput struct {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param Authorization header string true "Bearer Token"
+// @Security BearerAuth
 // @Param user body CreateUserInput true "User payload"
 // @Success 201 {object} models.User
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /users [post]
+// @Router /v1/users [post]
 func (h *UserHandler) CreateUser(c *gin.Context) {
 	var input CreateUserInput
 
@@ -51,7 +53,17 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 
 	user, err := h.userService.CreateUser(input.Email, input.Name)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+		// Detect unique constraint violations (Duplicate Email) to return accurate HTTP status codes natively.
+		if strings.Contains(err.Error(), "unique constraint") || strings.Contains(err.Error(), "23505") {
+			c.JSON(http.StatusConflict, gin.H{
+				"error":   "User already exists",
+				"details": "A user with this email address is already registered in the system.",
+			})
+			return
+		}
+
+		slog.Error("CreateUser Error", "error", err, "email", input.Email)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user", "details": err.Error()})
 		return
 	}
 
@@ -63,12 +75,12 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 // @Description Fetch details of a specific user
 // @Tags users
 // @Produce json
-// @Param Authorization header string true "Bearer Token"
+// @Security BearerAuth
 // @Param id path int true "User ID"
 // @Success 200 {object} models.User
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
-// @Router /users/{id} [get]
+// @Router /v1/users/{id} [get]
 func (h *UserHandler) GetUser(c *gin.Context) {
 	idParam := c.Param("id")
 	id, err := strconv.ParseUint(idParam, 10, 32)
@@ -91,10 +103,10 @@ func (h *UserHandler) GetUser(c *gin.Context) {
 // @Description Returns a list of all users in the system
 // @Tags users
 // @Produce json
-// @Param Authorization header string true "Bearer Token"
+// @Security BearerAuth
 // @Success 200 {array} models.User
 // @Failure 500 {object} map[string]string
-// @Router /users [get]
+// @Router /v1/users [get]
 func (h *UserHandler) GetUsers(c *gin.Context) {
 	users, err := h.userService.GetUsers()
 	if err != nil {
@@ -111,13 +123,13 @@ func (h *UserHandler) GetUsers(c *gin.Context) {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param Authorization header string true "Bearer Token"
+// @Security BearerAuth
 // @Param id path int true "User ID"
 // @Param status body UpdateUserStatusInput true "Status payload"
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
-// @Router /users/{id}/status [patch]
+// @Router /v1/users/{id}/status [patch]
 func (h *UserHandler) UpdateUserStatus(c *gin.Context) {
 	idParam := c.Param("id")
 	id, err := strconv.ParseUint(idParam, 10, 32)

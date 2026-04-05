@@ -25,8 +25,13 @@ import (
 // @version 1.0 (v1) / 2.0 (v2) 
 // @description REST API documentation integrating Redis caching, Rate-Limiting and Structured Logging.
 // @host localhost:8080
-// @BasePath /api/v1
+// @basePath /api
 // @schemes http
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer " followed by your JWT token to authenticate.
 
 func main() {
 	// Initialize Structured Logger natively over Go 1.21 configs
@@ -53,9 +58,9 @@ func main() {
 
 	// Seed mock users to prevent foreign key errors during mock login flows
 	mockUsers := []models.User{
-		{ID: 1, Email: "admin@finance.com", Name: "Admin User", Role: models.RoleAdmin},
-		{ID: 2, Email: "analyst@finance.com", Name: "Analyst User", Role: models.RoleAnalyst},
-		{ID: 3, Email: "viewer@finance.com", Name: "Viewer User", Role: models.RoleViewer},
+		{ID: 1, Email: "admin@finance.com", Name: "Admin User", Role: models.RoleAdmin, IsActive: true},
+		{ID: 2, Email: "analyst@finance.com", Name: "Analyst User", Role: models.RoleAnalyst, IsActive: true},
+		{ID: 3, Email: "viewer@finance.com", Name: "Viewer User", Role: models.RoleViewer, IsActive: true},
 	}
 	for _, u := range mockUsers {
 		var existing models.User
@@ -170,7 +175,7 @@ func main() {
 // @Tags system
 // @Produce json
 // @Success 200 {object} map[string]string
-// @Router /health [get]
+// @Router /v1/health [get]
 func HealthCheck(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok", "version": "1.0"})
 }
@@ -180,9 +185,9 @@ func HealthCheck(c *gin.Context) {
 // @Description Deletes system logs natively (admin only)
 // @Tags system
 // @Produce json
-// @Param Authorization header string true "Bearer Token"
+// @Security BearerAuth
 // @Success 200 {object} map[string]string
-// @Router /system/logs [delete]
+// @Router /v1/system/logs [delete]
 func DeleteSystemLogs(c *gin.Context) {
 	c.JSON(200, gin.H{"data": "System logs deleted natively."})
 }

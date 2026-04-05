@@ -13,7 +13,14 @@ const docTemplate = `{
         "version": "{{.Version}}"
     },
     "host": "{{.Host}}",
-    "basePath": "{{.BasePath}}",
+    "basePath": "/api",
+    "securityDefinitions": {
+        "BearerAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
+        }
+    },
     "paths": {
         "/v2/health": {
             "get": {
@@ -38,7 +45,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/auth/login": {
+        "/v1/auth/login": {
             "post": {
                 "description": "Logs in a user mockly (admin@finance.com, analyst@finance.com, viewer@finance.com) and returns a JWT token",
                 "consumes": [
@@ -102,7 +109,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/category-breakdown": {
+        "/v1/category-breakdown": {
             "get": {
                 "description": "Returns expenses aggregated by category",
                 "produces": [
@@ -112,13 +119,9 @@ const docTemplate = `{
                     "analytics"
                 ],
                 "summary": "Fetch category breakdown",
-                "parameters": [
+                "security": [
                     {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
+                        "BearerAuth": []
                     }
                 ],
                 "responses": {
@@ -141,7 +144,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/health": {
+        "/v1/health": {
             "get": {
                 "description": "Returns the health status of the API",
                 "produces": [
@@ -164,7 +167,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/monthly-trends": {
+        "/v1/monthly-trends": {
             "get": {
                 "description": "Returns income and expenses aggregated by month",
                 "produces": [
@@ -174,13 +177,9 @@ const docTemplate = `{
                     "analytics"
                 ],
                 "summary": "Fetch monthly trends",
-                "parameters": [
+                "security": [
                     {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
+                        "BearerAuth": []
                     }
                 ],
                 "responses": {
@@ -203,7 +202,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/summary": {
+        "/v1/summary": {
             "get": {
                 "description": "Returns financial summary metrics (total income, total expense, balance) for the dashboard",
                 "produces": [
@@ -213,13 +212,9 @@ const docTemplate = `{
                     "analytics"
                 ],
                 "summary": "Fetch dashboard summary",
-                "parameters": [
+                "security": [
                     {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
+                        "BearerAuth": []
                     }
                 ],
                 "responses": {
@@ -242,7 +237,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/system/logs": {
+        "/v1/system/logs": {
             "delete": {
                 "description": "Deletes system logs natively (admin only)",
                 "produces": [
@@ -274,7 +269,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/transactions": {
+        "/v1/transactions": {
             "get": {
                 "description": "Returns transaction paginated list optionally filtered by category, type, and date",
                 "produces": [
@@ -284,14 +279,12 @@ const docTemplate = `{
                     "transactions"
                 ],
                 "summary": "Fetch a list of transactions",
-                "parameters": [
+                "security": [
                     {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
+                        "BearerAuth": []
+                    }
+                ],
+                "parameters": [
                     {
                         "type": "integer",
                         "default": 1,
@@ -377,14 +370,12 @@ const docTemplate = `{
                     "transactions"
                 ],
                 "summary": "Create a new transaction",
-                "parameters": [
+                "security": [
                     {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
+                        "BearerAuth": []
+                    }
+                ],
+                "parameters": [
                     {
                         "description": "Transaction payload",
                         "name": "transaction",
@@ -423,7 +414,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/transactions/export": {
+        "/v1/transactions/export": {
             "get": {
                 "description": "Generates a CSV file of the user's financial transactions",
                 "produces": [
@@ -433,6 +424,11 @@ const docTemplate = `{
                     "transactions"
                 ],
                 "summary": "Export transactions to CSV",
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -443,7 +439,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/transactions/{id}": {
+        "/v1/transactions/{id}": {
             "put": {
                 "description": "Modifies an existing transaction",
                 "consumes": [
@@ -456,14 +452,12 @@ const docTemplate = `{
                     "transactions"
                 ],
                 "summary": "Update transaction",
-                "parameters": [
+                "security": [
                     {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
+                        "BearerAuth": []
+                    }
+                ],
+                "parameters": [
                     {
                         "type": "integer",
                         "description": "Transaction ID",
@@ -511,14 +505,12 @@ const docTemplate = `{
                     "transactions"
                 ],
                 "summary": "Delete transaction",
-                "parameters": [
+                "security": [
                     {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
+                        "BearerAuth": []
+                    }
+                ],
+                "parameters": [
                     {
                         "type": "integer",
                         "description": "Transaction ID",
@@ -552,7 +544,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/users": {
+        "/v1/users": {
             "get": {
                 "description": "Returns a list of all users in the system",
                 "produces": [
@@ -562,13 +554,9 @@ const docTemplate = `{
                     "users"
                 ],
                 "summary": "Fetch all users",
-                "parameters": [
+                "security": [
                     {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
+                        "BearerAuth": []
                     }
                 ],
                 "responses": {
@@ -604,14 +592,12 @@ const docTemplate = `{
                     "users"
                 ],
                 "summary": "Create a new user",
-                "parameters": [
+                "security": [
                     {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
+                        "BearerAuth": []
+                    }
+                ],
+                "parameters": [
                     {
                         "description": "User payload",
                         "name": "user",
@@ -650,7 +636,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/{id}/status": {
+        "/v1/users/{id}/status": {
             "patch": {
                 "description": "Activates or deactivates a user",
                 "consumes": [
@@ -687,7 +673,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/users/{id}": {
+        "/v1/users/{id}": {
             "get": {
                 "description": "Fetch details of a specific user",
                 "produces": [
@@ -697,14 +683,12 @@ const docTemplate = `{
                     "users"
                 ],
                 "summary": "Fetch a user by ID",
-                "parameters": [
+                "security": [
                     {
-                        "type": "string",
-                        "description": "Bearer Token",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    },
+                        "BearerAuth": []
+                    }
+                ],
+                "parameters": [
                     {
                         "type": "integer",
                         "description": "User ID",
