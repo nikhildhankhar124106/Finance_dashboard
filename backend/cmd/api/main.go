@@ -25,9 +25,8 @@ import (
 // @title Finance Dashboard API
 // @version 1.0 (v1) / 2.0 (v2) 
 // @description REST API documentation integrating Redis caching, Rate-Limiting and Structured Logging.
-// @host localhost:8080
 // @basePath /api
-// @schemes http
+// @schemes http https
 
 // @securityDefinitions.apikey BearerAuth
 // @in header
@@ -106,6 +105,7 @@ func main() {
 	r := gin.Default()
 	
 	// Apply Global Middlewares spanning cleanly
+	r.Use(middleware.CORS())
 	r.Use(middleware.ErrorHandler())
 	r.Use(middleware.RateLimiter())
 	// Global Audit Layer for write operations natively
