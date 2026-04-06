@@ -932,9 +932,9 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0 (v1) / 2.0 (v2)",
-	Host:             "localhost:8080",
-	BasePath:         "/api/v1",
-	Schemes:          []string{"http"},
+	Host:             "",
+	BasePath:         "/api",
+	Schemes:          []string{"https", "http"},
 	Title:            "Finance Dashboard API",
 	Description:      "REST API documentation integrating Redis caching, Rate-Limiting and Structured Logging.",
 	InfoInstanceName: "swagger",
