@@ -1,98 +1,242 @@
-# Finance Dashboard API
+# Finance Dashboard — Backend API
 
-A professional backend service for financial management built with Go (Golang). This application provides a stable foundation for transaction tracking, financial analytics, and role-based access control.
+A production-grade backend service for financial management, built with Go and the Gin framework. Provides REST APIs for transaction tracking, financial analytics, and role-based access control (RBAC).
 
-## Deployment Status
+---
 
-*   **Production API**: [https://finance-dashboard-t11s.onrender.com](https://finance-dashboard-t11s.onrender.com)
-*   **Interactive Documentation (Swagger)**: [https://finance-dashboard-t11s.onrender.com/docs/index.html](https://finance-dashboard-t11s.onrender.com/docs/index.html)
-*   **System Health**: [https://finance-dashboard-t11s.onrender.com/health](https://finance-dashboard-t11s.onrender.com/health)
+## Live Deployment
 
-## Technical Stack
+| Resource | URL |
+| :--- | :--- |
+| Production API | https://finance-dashboard-t11s.onrender.com |
+| Swagger Documentation | https://finance-dashboard-t11s.onrender.com/docs/index.html |
+| Health Check | https://finance-dashboard-t11s.onrender.com/health |
 
-*   **Language**: Go 1.21+ (Gin Framework)
-*   **Database**: PostgreSQL 16 (GORM ORM)
-*   **Caching**: Redis 7.0 (Distributed caching for analytics)
-*   **Authentication**: JWT (HMAC-SHA256)
-*   **Logging**: Structured JSON Logging (slog)
+---
 
-## Core Features
+## Technology Stack
 
-### 1. User & Role Management
-*   Secure authentication using JWT.
-*   Pre-seeded accounts for testing (Admin, Analyst, Viewer).
-*   Role-based permissions enforced across all endpoints.
+| Layer | Technology |
+| :--- | :--- |
+| Language | Go 1.21+ |
+| HTTP Framework | Gin-Gonic |
+| Database | PostgreSQL 16 via GORM |
+| Caching | Redis 7.0 |
+| Authentication | JWT (HMAC-SHA256) |
+| Documentation | Swagger / OpenAPI 2.0 |
+| Logging | Structured JSON (`slog`) |
 
-### 2. Financial Records (CRUD)
-*   Create, Read, Update, and Delete transactions.
-*   **Filtering**: Search by category, transaction type, and specific dates.
-*   **Pagination**: Efficiently manage large datasets with offset-based paging.
-*   **Global Search**: Keyword-based searching across categories and notes using PostgreSQL ILIKE.
+---
 
-### 3. Analytics & Trends
-*   **Summary**: Total income, total expenses, and current balance.
-*   **Breakdown**: Spending distribution categorized by transaction type.
-*   **Monthly Trends**: Periodical data showing financial movement over time.
+## Quick Start (Local Development)
 
-### 4. System Stability
-*   **Soft Deletes**: Records are marked as deleted but preserved for audit integrity.
-*   **Sequence Sync**: Automatic database sequence alignment on startup to prevent ID conflicts.
+**Prerequisites:** Go 1.21+, PostgreSQL, Redis
 
-## Security & Access Control
+**1. Clone the repository**
+```bash
+git clone https://github.com/nikhildhankhar124106/Finance_dashboard.git
+cd "Finance dashboard/backend"
+```
 
-### Role-Based Access Control (RBAC)
-Role-based permissions are enforced via custom middleware. The system extracts the user role from the JWT claim and validates it against the allowed roles for each specific route.
+**2. Configure environment variables**
 
-| Feature | Endpoint | Admin | Analyst | Viewer |
-| :--- | :--- | :---: | :---: | :---: |
-| Create User | `POST /api/v1/users` | Yes | No | No |
-| List Users | `GET /api/v1/users` | Yes | Yes | Yes |
-| Create Transaction | `POST /api/v1/transactions` | Yes | No | No |
-| List Transactions | `GET /api/v1/transactions` | Yes | Yes | Yes (Scoped) |
-| View Analytics | `GET /api/v1/summary` | Yes | Yes | Yes |
-| Delete Logs | `DELETE /api/v1/system/logs` | Yes | No | No |
+Create a `.env` file in the `backend/` directory:
+```env
+PORT=8080
+APP_ENV=development
 
-## Validation & Error Handling
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=yourpassword
+DB_NAME=financedb
 
-*   **Input Validation**: Request payloads are strictly validated using Gin's `binding:"required"` and the Go Playground validator.
-*   **HTTP Status Codes**:
-    *   **200/201**: Successful request/creation.
-    *   **400**: Bad Request (Invalid input).
-    *   **401**: Unauthorized (Missing or invalid token).
-    *   **403**: Forbidden (Insufficient role permissions).
-    *   **500**: Internal Server Error.
-*   **Structured Errors**: All failures return a standardized JSON response: `{"error": "description"}`.
+JWT_SECRET=your-secret-key
+```
+
+**3. Install dependencies**
+```bash
+go mod tidy
+```
+
+**4. Run the server**
+```bash
+go run ./cmd/api/main.go
+```
+
+**5. Open Swagger UI**
+
+Navigate to: `http://localhost:8080/docs/index.html`
+
+---
+
+## Authentication
+
+This API uses **mock JWT authentication** for demonstration purposes.
+
+**Step 1 — Login to get a token:**
+
+```
+POST /api/v1/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@finance.com"
+}
+```
+
+**Step 2 — Authorize in Swagger:**
+
+Click the **Authorize** button in Swagger UI and enter:
+```
+Bearer <your_token_here>
+```
+
+**Test Accounts:**
+
+| Role | Email | Access Level |
+| :--- | :--- | :--- |
+| Admin | admin@finance.com | Full access |
+| Analyst | analyst@finance.com | Read-only analytics |
+| Viewer | viewer@finance.com | Own transactions only |
+
+---
+
+## API Reference
+
+### Authentication
+| Method | Endpoint | Description | Auth Required |
+| :--- | :--- | :--- | :---: |
+| POST | `/api/v1/auth/login` | Generate JWT token | No |
+
+### Users
+| Method | Endpoint | Description | Min. Role |
+| :--- | :--- | :--- | :--- |
+| GET | `/api/v1/users` | List all users | Viewer |
+| GET | `/api/v1/users/:id` | Get a user by ID | Viewer |
+| POST | `/api/v1/users` | Create a new user | Admin |
+| PATCH | `/api/v1/users/:id/status` | Activate / deactivate user | Admin |
+
+### Transactions
+| Method | Endpoint | Description | Min. Role |
+| :--- | :--- | :--- | :--- |
+| GET | `/api/v1/transactions` | List transactions (filterable, paginated) | Viewer |
+| POST | `/api/v1/transactions` | Create a transaction | Admin |
+| PUT | `/api/v1/transactions/:id` | Update a transaction | Admin |
+| DELETE | `/api/v1/transactions/:id` | Delete a transaction | Admin |
+| GET | `/api/v1/transactions/export` | Export transactions as CSV | Admin |
+
+### Analytics
+| Method | Endpoint | Description | Min. Role |
+| :--- | :--- | :--- | :--- |
+| GET | `/api/v1/summary` | Total income, expenses, balance | Viewer |
+| GET | `/api/v1/category-breakdown` | Spending by category | Viewer |
+| GET | `/api/v1/monthly-trends` | Income vs expense by month | Viewer |
+
+### System
+| Method | Endpoint | Description | Min. Role |
+| :--- | :--- | :--- | :--- |
+| GET | `/health` | Health check | None |
+| DELETE | `/api/v1/system/logs` | Clear system audit logs | Admin |
+
+---
+
+## Query Parameters — Transactions
+
+`GET /api/v1/transactions` supports the following query parameters:
+
+| Parameter | Type | Description | Example |
+| :--- | :--- | :--- | :--- |
+| `page` | integer | Page number (default: 1) | `?page=2` |
+| `page_size` | integer | Results per page (default: 10) | `?page_size=25` |
+| `category` | string | Filter by category | `?category=Groceries` |
+| `type` | string | Filter by type (`Income` or `Expense`) | `?type=Expense` |
+| `date` | string | Filter by exact date (YYYY-MM-DD) | `?date=2026-01-15` |
+| `search` | string | Search across category and notes | `?search=rent` |
+| `sort` | string | Sort field: `amount`, `date`, `category` | `?sort=amount` |
+| `order` | string | Sort direction: `asc` or `desc` | `?order=desc` |
+
+---
+
+## Role-Based Access Control
+
+Access is enforced via JWT middleware. The `role` claim in the token is validated against each route's allowed roles.
+
+| Endpoint Group | Admin | Analyst | Viewer |
+| :--- | :---: | :---: | :---: |
+| Auth (login) | Yes | Yes | Yes |
+| View Users | Yes | Yes | Yes |
+| Manage Users | Yes | No | No |
+| View Transactions | Yes | Yes | Yes |
+| Create / Edit / Delete Transactions | Yes | No | No |
+| Export CSV | Yes | No | No |
+| View Analytics | Yes | Yes | Yes |
+| Delete System Logs | Yes | No | No |
+
+---
+
+## Error Handling
+
+All error responses follow a consistent JSON format:
+
+```json
+{
+  "error": "description of the error"
+}
+```
+
+| HTTP Code | Meaning |
+| :--- | :--- |
+| 200 / 201 | Success / Created |
+| 400 | Bad Request — invalid input or missing fields |
+| 401 | Unauthorized — missing or invalid JWT token |
+| 403 | Forbidden — insufficient role permissions |
+| 404 | Not Found — resource does not exist |
+| 429 | Too Many Requests — rate limit exceeded (100 req/min per IP) |
+| 500 | Internal Server Error |
+
+---
 
 ## Project Structure
 
-```text
-├── cmd/api           # Application entry point
-├── domain/models     # Database schemas and entities
-├── handler/api       # HTTP handlers (Request/Response)
-├── handler/middleware # Auth, RBAC, and Rate-limiting
-├── infrastructure    # Database and Redis adapters
-├── repository        # Data persistence (SQL logic)
-├── service           # Business logic and processing
-└── pkg               # Shared utilities (Auth, Logging)
+```
+backend/
+├── cmd/
+│   └── api/              # Application entry point (main.go)
+├── config/               # Environment variable loading
+├── domain/
+│   └── models/           # GORM database models
+├── handler/
+│   ├── api/              # HTTP request handlers
+│   └── middleware/       # Auth, RBAC, CORS, rate limiter, error handler
+├── infrastructure/
+│   ├── db/               # PostgreSQL connection
+│   └── cache/            # Redis connection
+├── repository/           # Database queries (data access layer)
+├── service/              # Business logic layer
+├── pkg/
+│   ├── auth/             # JWT utilities
+│   ├── apperrors/        # Standardized error types
+│   └── logger/           # Structured slog setup
+├── docs/                 # Swagger auto-generated files
+└── tests/                # Integration tests
 ```
 
-## Environment Configuration
+---
 
-### Production (Render & Neon)
-*   **DB_URL**: The Neon PostgreSQL connection string (supports `sslmode=require`).
-*   **JWT_SECRET**: The secure signing key for tokens.
-*   **APP_ENV**: Set to `production` for release mode.
+## Production Environment Variables (Render)
 
-### Local Development
-Defaults are provided for local development:
-*   `DB_PORT`: 5432
-*   `DB_NAME`: financedb
-*   `PORT`: 8080
+| Variable | Description |
+| :--- | :--- |
+| `PORT` | Server port (auto-set by Render) |
+| `APP_ENV` | Set to `production` to enable Gin release mode |
+| `DB_URL` | Full Neon PostgreSQL connection string (`sslmode=require`) |
+| `JWT_SECRET` | Secret key for signing JWT tokens |
 
-## Local Installation
+---
 
-1. Clone the repository and navigate to the backend directory.
-2. Initialize environment: `cp .env.example .env`.
-3. Download dependencies: `go mod tidy`.
-4. Run: `go run ./cmd/api/main.go`.
-5. Access Swagger at `http://localhost:8080/docs/index.html`.
+## Running Tests
+
+```bash
+go test ./tests/...
+```
